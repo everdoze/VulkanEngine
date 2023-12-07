@@ -7,19 +7,13 @@
 
 namespace Engine {
 
-    VulkanTexture::VulkanTexture(
-        std::string name,
-        u32 width,
-        u32 height,
-        u8 channel_count,
-        u8 has_transparency,
-        u8* pixels) : Texture(name, width, height, channel_count, has_transparency, pixels) {
+    VulkanTexture::VulkanTexture(TextureCreateInfo& info) : Texture(info) {
         
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         VkFormat image_format = VK_FORMAT_R8G8B8A8_UNORM;
 
-        VkDeviceSize image_size = width * height * channel_count;
+        VkDeviceSize image_size = info.width * info.height * info.channel_count;
 
         VkBufferUsageFlagBits usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         VkMemoryPropertyFlags memory_prop_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -27,9 +21,9 @@ namespace Engine {
             image_size, usage,
             memory_prop_flags, true);
 
-        buffer.LoadData(0, image_size, 0, pixels);
+        buffer.LoadData(0, image_size, 0, info.pixels);
 
-        this->image = CreateRef<VulkanImage>(
+        this->image = new VulkanImage(
             VK_IMAGE_TYPE_2D,
             width,
             height,
@@ -103,9 +97,9 @@ namespace Engine {
     };
 
     VulkanTexture::~VulkanTexture() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
-        this->image = nullptr;
+        delete this->image;
         
         vkDestroySampler(
             backend->GetVulkanDevice()->logical_device,

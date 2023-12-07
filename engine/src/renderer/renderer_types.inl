@@ -29,7 +29,7 @@ namespace Engine {
     typedef struct GeometryRenderData {
         u32 object_id;
         glm::mat4 model;
-        Ref<Texture> textures[16];
+        Texture* textures[16];
     } GeometryRenderData;
 
 };

@@ -6,17 +6,17 @@
 
 namespace Engine {
 
-    Ref<InputSystem> InputSystem::instance = nullptr;
+    InputSystem* InputSystem::instance = nullptr;
 
     b8 InputSystem::Initialize() {
         if (!instance) {
-            instance = CreateRef<InputSystem>();
+            instance = new InputSystem();
         }
         DEBUG("Input system initialized successfully.");
         return true;
     };
 
-    Ref<InputSystem> InputSystem::GetInstance() {
+    InputSystem* InputSystem::GetInstance() {
         if (instance) {
             return instance;
         }
@@ -24,7 +24,7 @@ namespace Engine {
     };
 
     void InputSystem::Shutdown() {
-        instance = nullptr;
+        delete instance;
     };
 
     void InputSystem::InputUpdate(f64 delta_time) {

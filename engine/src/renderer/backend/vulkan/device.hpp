@@ -35,7 +35,7 @@ namespace Engine {
             Device();
             ~Device();
 
-            static Ref<Device> CreateDevice(class VulkanRendererBackend* backend);
+            static Device* CreateDevice(class VulkanRendererBackend* backend);
             static void DestroyDevice();
 
             b8 SelectPhysicalDevice();

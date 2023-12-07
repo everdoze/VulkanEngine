@@ -44,9 +44,7 @@ namespace Engine {
             void SetSuspended (b8 suspended) { this->suspended = suspended; };
             b8 GetSuspended () { return suspended; };
             
-            Ref<Camera> GetCamera();
-
-            static Ref<Application> GetInstance();
+            Camera* GetCamera();
 
             void SetReady(b8 value);
             b8 IsReady();
@@ -73,10 +71,10 @@ namespace Engine {
             
             f64 last_time;
 
-            static Ref<Application> instance;
+            static Application* instance;
             friend int ::main(int argc, char** argv);
     };
 
 
-    Ref<Application> CreateApplication(ApplicationCommandLineArgs args);
+    Application* CreateApplication(ApplicationCommandLineArgs args);
 }

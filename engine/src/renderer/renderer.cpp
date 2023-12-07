@@ -12,9 +12,9 @@
 
 namespace Engine {
 
-    Ref<RendererFrontend> RendererFrontend::instance = nullptr;
+    RendererFrontend* RendererFrontend::instance = nullptr;
 
-    Ref<RendererFrontend> RendererFrontend::GetInstance() {
+    RendererFrontend* RendererFrontend::GetInstance() {
         if (instance) {
             return instance;
         }
@@ -31,7 +31,7 @@ namespace Engine {
             "paving"
         };
 
-        Ref<TextureSystem> ts = TextureSystem::GetInstance();
+        TextureSystem* ts = TextureSystem::GetInstance();
 
         const char* old_name = names[current_texture];
 
@@ -52,7 +52,7 @@ namespace Engine {
     };
 
     b8 RendererFrontend::Initialize(RendererSetup setup, RendererBackendType type) {
-        instance = CreateRef<RendererFrontend>();
+        instance = new RendererFrontend();
         instance->CreateBackend(setup, type);
         instance->CreateCamera();
         instance->InitializeRenderer();
@@ -61,11 +61,11 @@ namespace Engine {
     };
 
     void RendererFrontend::CreateCamera() {
-        camera = CreateRef<Camera>();
+        camera = new Camera();
     };
 
     void RendererFrontend::DestroyCamera() {
-        camera = nullptr;
+        delete camera;
     };
     
     void RendererFrontend::InitializeRenderer() {
@@ -79,7 +79,7 @@ namespace Engine {
     b8 RendererFrontend::CreateBackend(RendererSetup setup, RendererBackendType type) {
         switch (type) {
             case RendererBackendType::VULKAN: {
-                backend = CreateRef<VulkanRendererBackend>(setup);
+                backend = new VulkanRendererBackend(setup);
             } break;
 
             case RendererBackendType::OPEN_GL: {
@@ -97,20 +97,20 @@ namespace Engine {
 
     void RendererFrontend::Shutdown() {
         if (instance) {
-            instance->test_texture = nullptr;
+            delete instance->test_texture;
             EventSystem::GetInstance()->UnregisterEvent(
                 EventType::Debug1,
                 "Renderer"
             );
             instance->ShutdownBackend();
-            instance = nullptr;
+            delete instance;
         }
     };
 
     void RendererFrontend::ShutdownBackend() {
         if (backend) {
             backend->Shutdown();
-            backend = nullptr;
+            delete backend;
         }
     };
 
@@ -122,7 +122,7 @@ namespace Engine {
     };
     
     b8 RendererFrontend::DrawFrame(f32 delta_time) {
-        Ref<RendererFrontend> instance = RendererFrontend::GetInstance();
+        RendererFrontend* instance = RendererFrontend::GetInstance();
 
         if (instance->BeginFrame(delta_time)) {
             
@@ -174,26 +174,20 @@ namespace Engine {
         return backend->UpdateObject(data);
     };
 
-    Ref<Texture> RendererFrontend::CreateTexture(
-        std::string name,
-        u32 width,
-        u32 height,
-        u8 channel_count,
-        u8 has_transparency,
-        u8* pixels) {
-
+    Texture* RendererFrontend::CreateTexture(TextureCreateInfo& info) {
         if (!backend) {
             return nullptr;
         }
 
-        return Cast<Texture>(backend->CreateTexture(
-            name,
-            width,
-            height,
-            channel_count,
-            has_transparency,
-            pixels
-        ));
+        return backend->CreateTexture(info);
+    };
+
+    Material* RendererFrontend::CreateMaterial(MaterialCreateInfo& info) {
+        if (!backend) {
+            return nullptr;
+        }
+
+        return backend->CreateMaterial(info);
     };
 
 };

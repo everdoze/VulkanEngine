@@ -35,9 +35,9 @@ namespace Engine {
 
             ~VulkanRenderpass();   
 
-            void Begin(Ref<VulkanCommandBuffer> command_buffer);
+            void Begin(VulkanCommandBuffer* command_buffer);
 
-            void End(Ref<VulkanCommandBuffer> command_buffer);
+            void End(VulkanCommandBuffer* command_buffer);
     };
 
 };

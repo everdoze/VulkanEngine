@@ -33,7 +33,7 @@ namespace Engine {
     LRESULT CALLBACK Win32ProcessMessage(HWND hwnd, u32 msg, WPARAM w_param, LPARAM l_param);
 
     Keys SplitCodeLR(b8 pressed, i32 in_left, i32 in_right, Keys out_left, Keys out_right) {
-        Ref<InputSystem> input_system = InputSystem::GetInstance();
+        InputSystem* input_system = InputSystem::GetInstance();
 
         Keys key;
         if ((GetKeyState(in_left) & 0x8000) || (!pressed && input_system->IsKeyDown(out_left))) {

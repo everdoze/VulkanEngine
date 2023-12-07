@@ -13,7 +13,7 @@ namespace Engine {
             b8 ready;
 
             VulkanPipeline(
-                Ref<class VulkanRenderpass> renderpass,
+                class VulkanRenderpass* renderpass,
                 u32 attribute_count,
                 VkVertexInputAttributeDescription* attributes,
                 u32 descriptor_set_layout_count,
@@ -27,10 +27,10 @@ namespace Engine {
 
             ~VulkanPipeline();
 
-            void Bind(Ref<class VulkanCommandBuffer> command_buffer, VkPipelineBindPoint bind_point);
+            void Bind(class VulkanCommandBuffer* command_buffer, VkPipelineBindPoint bind_point);
 
         private:
-            Ref<class VulkanRenderpass> renderpass;
+            class VulkanRenderpass* renderpass;
     };
 
 };

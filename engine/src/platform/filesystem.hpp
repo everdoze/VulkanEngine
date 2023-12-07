@@ -16,10 +16,10 @@ namespace Engine {
             File(std::string path, FileMode mode, b8 binary);
             ~File();
 
-            std::string ReadLine();
+            b8 ReadLine(std::string& line);
             std::vector<std::string> ReadAllLines();
 
-            std::vector<char> ReadAllBytes();
+            std::vector<c8> ReadAllBytes();
 
             b8 WriteLine(std::string line);
 

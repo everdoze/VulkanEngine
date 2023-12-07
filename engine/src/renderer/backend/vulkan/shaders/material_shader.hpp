@@ -33,17 +33,17 @@ namespace Engine {
     class VulkanShader {
         public:
             VulkanShaderStage stages[VULKAN_MATERIAL_SHADER_STAGE_COUNT];
-            Ref<VulkanPipeline> pipeline;
+            VulkanPipeline* pipeline;
 
             VkDescriptorPool global_descriptor_pool;
             VkDescriptorSetLayout global_descriptor_set_layout;
             VkDescriptorSet global_descriptor_sets[3]; // 3 for tripple-buffering (one descriptor per frame)
             GlobalUniformObject global_ubo;
-            Ref<VulkanBuffer> global_uniform_buffer;
+            VulkanBuffer* global_uniform_buffer;
 
             VkDescriptorSetLayout material_descriptor_set_layout;
             VkDescriptorPool material_descriptor_pool;
-            Ref<VulkanBuffer> material_uniform_buffer;
+            VulkanBuffer* material_uniform_buffer;
             u32 material_uniform_buffer_index;
 
             b8 ready;

@@ -13,7 +13,7 @@ namespace Engine {
         VkMemoryPropertyFlags memory_property_flags,
         b8 bind_on_create) {
         
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         this->total_size = size;
         this->usage = usage;
@@ -64,7 +64,7 @@ namespace Engine {
     };
 
     VulkanBuffer::~VulkanBuffer() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         if (this->memory) {
             vkFreeMemory(
@@ -88,7 +88,7 @@ namespace Engine {
     };
 
     b8 VulkanBuffer::Resize(u64 new_size, VkQueue queue, VkCommandPool pool) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         VkBufferCreateInfo buffer_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
         buffer_info.size = new_size;
@@ -156,7 +156,7 @@ namespace Engine {
     };
 
     void VulkanBuffer::Bind(u64 offset) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         VK_CHECK(vkBindBufferMemory(
             backend->GetVulkanDevice()->logical_device,
             this->handle,
@@ -165,7 +165,7 @@ namespace Engine {
     };
 
     void* VulkanBuffer::LockMemory(u64 offset, u64 size, u32 flags) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         void* data;
         VK_CHECK(vkMapMemory(
             backend->GetVulkanDevice()->logical_device,
@@ -178,14 +178,14 @@ namespace Engine {
     };
 
     void VulkanBuffer::UnlockMemory() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         vkUnmapMemory(
             backend->GetVulkanDevice()->logical_device,
             this->memory);
         };
 
     void VulkanBuffer::LoadData(u64 offset, u64 size, u32 flags, const void* data) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         void* data_ptr;
         VK_CHECK(vkMapMemory(
             backend->GetVulkanDevice()->logical_device,
@@ -208,7 +208,7 @@ namespace Engine {
         VkBuffer dest,
         u64 dest_offset,
         u64 size) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         
         vkQueueWaitIdle(queue);
 

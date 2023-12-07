@@ -10,7 +10,7 @@ namespace Engine {
     Device::Device() {};
 
     Device::~Device() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         // Unset queues
         transfer_queue = nullptr;
         graphics_queue = nullptr;
@@ -53,8 +53,8 @@ namespace Engine {
         transfer_queue_index = -1;
     };
 
-    Ref<Device> Device::CreateDevice(VulkanRendererBackend* backend) {
-        Ref<Device> newDevice = CreateRef<Device>();
+    Device* Device::CreateDevice(VulkanRendererBackend* backend) {
+        Device* newDevice = new Device();
         
         if (!newDevice->SelectPhysicalDevice()) {
             return nullptr;
@@ -152,7 +152,7 @@ namespace Engine {
     };
 
     b8 Device::SelectPhysicalDevice() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         u32 physical_device_count = 0;
         VK_CHECK(vkEnumeratePhysicalDevices(backend->GetVulkanInstance(), &physical_device_count, 0));

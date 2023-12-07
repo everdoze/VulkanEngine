@@ -7,7 +7,7 @@
 namespace Engine {
 
     VulkanFence::VulkanFence(b8 create_signaled) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         this->is_signaled = create_signaled;
 
@@ -26,7 +26,7 @@ namespace Engine {
 
     VulkanFence::~VulkanFence() {
         if (this->handle) {
-            Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+            VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
             vkDestroyFence(
                 backend->GetVulkanDevice()->logical_device,
                 this->handle,
@@ -38,7 +38,7 @@ namespace Engine {
 
     b8 VulkanFence::Wait(u64 timeout_ns) {
         if (!this->is_signaled) {
-            Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+            VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
             VkResult result = vkWaitForFences(
                 backend->GetVulkanDevice()->logical_device,
                 1,
@@ -75,7 +75,7 @@ namespace Engine {
 
     void VulkanFence::Reset() {
         if (this->is_signaled) {
-            Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+            VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
             VK_CHECK(vkResetFences(
                 backend->GetVulkanDevice()->logical_device,
                 1,

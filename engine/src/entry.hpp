@@ -1,6 +1,6 @@
 #include "application/app.hpp"
 
-extern Engine::Ref<Engine::Application> Engine::CreateApplication(Engine::ApplicationCommandLineArgs args);
+extern Engine::Application* Engine::CreateApplication(Engine::ApplicationCommandLineArgs args);
 
 
 int main(int argc, char** argv)
@@ -12,5 +12,5 @@ int main(int argc, char** argv)
 	} else {
 		app->Shutdown();
 	}
-	app = nullptr;
+	delete app;
 }

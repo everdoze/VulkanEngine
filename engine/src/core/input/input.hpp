@@ -174,7 +174,7 @@ namespace Engine {
             static b8 Initialize();
             static void Shutdown();
 
-            static Ref<InputSystem> GetInstance();
+            static InputSystem* GetInstance();
             
             void InputUpdate(f64 delta_time);
             void ProcessKey(Keys key, b8 pressed);
@@ -201,7 +201,7 @@ namespace Engine {
             MouseState mouse_current;
             MouseState mouse_prev;
 
-            static Ref<InputSystem> instance;
+            static InputSystem* instance;
     };
 
 };

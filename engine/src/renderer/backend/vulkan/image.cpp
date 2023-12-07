@@ -8,7 +8,7 @@
 namespace Engine {
     
     VulkanImage::~VulkanImage() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         
         vkDeviceWaitIdle(backend->GetVulkanDevice()->logical_device);
 
@@ -37,7 +37,7 @@ namespace Engine {
         b32 create_view,
         VkImageAspectFlags view_aspect_flags) {
         
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         this->height = height;
         this->width = width;
@@ -92,7 +92,7 @@ namespace Engine {
             VkFormat format,
             VkImageAspectFlags aspect_flags) {
 
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         
         VkImageViewCreateInfo view_create_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_create_info.image = this->handle;
@@ -120,7 +120,7 @@ namespace Engine {
             VkImageLayout old_layout, 
             VkImageLayout new_layout) {
 
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         
         VkImageMemoryBarrier barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         barrier.oldLayout = old_layout;

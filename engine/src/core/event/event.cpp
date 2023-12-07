@@ -4,7 +4,7 @@
 
 namespace Engine {
 
-    Ref<EventSystem> EventSystem::instance = nullptr;
+    EventSystem* EventSystem::instance = nullptr;
 
     Event::Event(EventType type, std::string listener, SlotType handler) {
         this->handler = handler;
@@ -18,7 +18,7 @@ namespace Engine {
 
     b8 EventSystem::Initialize() {
         if (!instance) {
-            instance = CreateRef<EventSystem>();
+            instance = new EventSystem();
         }
 
         instance->codes.resize((u8)EventType::Max);
@@ -30,10 +30,10 @@ namespace Engine {
 
     void EventSystem::Shutdown() {
         DEBUG("Shutting down EventSystem");
-        instance = nullptr;
+        delete instance;
     };
 
-    Ref<EventSystem> EventSystem::GetInstance() {
+    EventSystem* EventSystem::GetInstance() {
         if (instance) {
             return instance;
         }

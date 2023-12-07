@@ -16,9 +16,9 @@ namespace Engine {
             VkImage* images;
             VkImageView* views;
 
-            Ref<VulkanImage> depth_attachment;
+            VulkanImage* depth_attachment;
 
-            std::vector<Ref<VulkanFramebuffer>> framebuffers;
+            std::vector<VulkanFramebuffer*> framebuffers;
 
             b8 ready;
 
@@ -36,7 +36,7 @@ namespace Engine {
             );
 
             void GenerateFramebuffers(
-                Ref<class VulkanRenderpass> renderpass
+                class VulkanRenderpass* renderpass
             );
 
             void DestroyFramebuffers();

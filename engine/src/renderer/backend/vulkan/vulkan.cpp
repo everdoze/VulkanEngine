@@ -10,7 +10,7 @@
 
 namespace Engine {
 
-    void VulkanRendererBackend::UploadDataRange(VkCommandPool pool, VkFence fence, VkQueue queue, Ref<VulkanBuffer> buffer, u64 offset, u64 size, void* data) {
+    void VulkanRendererBackend::UploadDataRange(VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, u64 offset, u64 size, void* data) {
         // Create a host-visible staging buffer to upload to. Mark it as the source of the transfer.
         VkBufferUsageFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         VulkanBuffer staging = VulkanBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, flags, true);
@@ -190,7 +190,7 @@ namespace Engine {
 
         // Create default shader
         DEBUG("Creating builtin object shader...");
-        default_shader = CreateRef<VulkanShader>(BUILTIN_SHADER_NAME_OBJECT);
+        default_shader = new VulkanShader(BUILTIN_SHADER_NAME_OBJECT);
         if (!default_shader->ready) {
             ERROR("Error when creating default object shader...");
             return false;
@@ -259,7 +259,7 @@ namespace Engine {
         
         // Destroy shader module
         DEBUG("Destroying Vulkan shader module...");
-        default_shader = nullptr;
+        delete default_shader;
 
         // Destroy sync objects
         DEBUG("Destroying Vulkan sync objects...");
@@ -275,14 +275,14 @@ namespace Engine {
 
         // Destroy renderpass
         DEBUG("Destroying Vulkan renderpass...");
-        main_renderpass = nullptr;
+        delete main_renderpass;
 
         // Destroy swapchain
         DEBUG("Destroying Vulkan swapchain...");
-        swapchain = nullptr;
+        delete swapchain;
 
         DEBUG("Destroying device...");
-        device = nullptr;
+        delete device;
 
         // Destroy surface
         DEBUG("Destroying Vulkan surface...");
@@ -342,7 +342,7 @@ namespace Engine {
             return false;
         }
 
-        Ref<VulkanCommandBuffer> command_buffer = graphics_command_buffers[image_index];
+        VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
         command_buffer->Reset();
         command_buffer->Begin(false, false, false);
 
@@ -377,7 +377,7 @@ namespace Engine {
     };
 
     b8 VulkanRendererBackend::EndFrame(f32 delta_time) {
-        Ref<VulkanCommandBuffer> command_buffer = graphics_command_buffers[image_index];
+        VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
 
         main_renderpass->End(command_buffer);
         command_buffer->End();
@@ -462,12 +462,12 @@ namespace Engine {
     };
 
     b8 VulkanRendererBackend::SwapchainCreate(u16 width, u16 height) {
-        swapchain = CreateRef<VulkanSwapchain>(width, height);
+        swapchain = new VulkanSwapchain(width, height);
         return swapchain->ready;
     };
 
     b8 VulkanRendererBackend::SwapchainRecreate(u16 width, u16 height) {
-        swapchain = nullptr;
+        delete swapchain;
         return SwapchainCreate(width, height);
     };
 
@@ -490,7 +490,7 @@ namespace Engine {
         vkDeviceWaitIdle(device->logical_device);
 
         for (u32 i = 0; i < swapchain->image_count; ++i) {
-            images_in_flight[i] = nullptr;
+            delete images_in_flight[i];
         }
 
         swapchain->DestroyFramebuffers();
@@ -518,7 +518,7 @@ namespace Engine {
     };
 
     b8 VulkanRendererBackend::RenderpassCreate() {
-        main_renderpass = CreateRef<VulkanRenderpass>(
+        main_renderpass = new VulkanRenderpass(
             0, 0, this->width, this->height,
             0.0f, 0.1f, 0.1f, 1.0f,
             1.0f, 0);
@@ -546,7 +546,7 @@ namespace Engine {
                 allocator,
                 &queue_complete_semaphores[i]);
 
-            in_flight_fences.push_back(CreateRef<VulkanFence>(true));
+            in_flight_fences.push_back(new VulkanFence(true));
         }
 
         images_in_flight.resize(swapchain->image_count);
@@ -578,15 +578,20 @@ namespace Engine {
 
         image_available_semaphores.clear();
         queue_complete_semaphores.clear();
+
+        for (u32 i = 0; i < in_flight_fences.size(); ++i) {
+            delete in_flight_fences[i];
+        }
+ 
         in_flight_fences.clear();
         images_in_flight.clear();
     };
 
     void VulkanRendererBackend::CreateCommandBuffers() {
         if (graphics_command_buffers.size()) {
-            // for (u32 i = 0; i < graphics_command_buffers.size(); ++i) {
-            //     delete graphics_command_buffers[i];
-            // }
+            for (u32 i = 0; i < graphics_command_buffers.size(); ++i) {
+                delete graphics_command_buffers[i];
+            }
             graphics_command_buffers.clear();
         }
 
@@ -595,16 +600,16 @@ namespace Engine {
         }
 
         for (u32 i = 0; i < swapchain->image_count; ++i) {
-            graphics_command_buffers.push_back(CreateRef<VulkanCommandBuffer>(device->graphics_command_pool, true));
+            graphics_command_buffers.push_back(new VulkanCommandBuffer(device->graphics_command_pool, true));
         }
 
         DEBUG("Command buffers created successfully.");
     };
 
     void VulkanRendererBackend::DestroyCommandBuffers() {
-        // for (u32 i = 0; i < swapchain->image_count; ++i) {
-        //     delete graphics_command_buffers[i];
-        // }
+        for (u32 i = 0; i < swapchain->image_count; ++i) {
+            delete graphics_command_buffers[i];
+        }
         graphics_command_buffers.clear();
     };
 
@@ -613,7 +618,7 @@ namespace Engine {
         VkMemoryPropertyFlagBits memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         const u64 vertex_buffer_size = sizeof(Vertex3D) MB;
 
-        object_vertex_buffer = CreateRef<VulkanBuffer>(
+        object_vertex_buffer = new VulkanBuffer(
             vertex_buffer_size,
             (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
             memory_property_flags, true);
@@ -624,7 +629,7 @@ namespace Engine {
         }
 
         const u64 index_buffer_size = sizeof(u32) MB;
-        object_index_buffer = CreateRef<VulkanBuffer>(
+        object_index_buffer = new VulkanBuffer(
             index_buffer_size,
             (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
             memory_property_flags, true);
@@ -640,8 +645,8 @@ namespace Engine {
 
 
     void VulkanRendererBackend::DestroyBuffers() {
-        object_vertex_buffer = nullptr;
-        object_index_buffer = nullptr;
+        delete object_vertex_buffer;
+        delete object_index_buffer;
     };
 
 
@@ -657,7 +662,7 @@ namespace Engine {
     };  
 
     void VulkanRendererBackend::UpdateObject(GeometryRenderData data) {
-        Ref<VulkanCommandBuffer> command_buffer = graphics_command_buffers[image_index];
+        VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
 
         default_shader->UpdateObject(data);
 
@@ -676,26 +681,16 @@ namespace Engine {
         // TODO: end temporary test code
     };
 
-    Ref<Texture> VulkanRendererBackend::CreateTexture(
-        std::string name,
-        u32 width,
-        u32 height,
-        u8 channel_count,
-        u8 has_transparency,
-        u8* pixels) {
-
-        return Cast<Texture>(CreateTextureInternal(name, width, height, channel_count, has_transparency, pixels));
+    Texture* VulkanRendererBackend::CreateTexture(TextureCreateInfo& info) {
+        return CreateTextureInternal(info);
     };
 
-    Ref<VulkanTexture> VulkanRendererBackend::CreateTextureInternal(
-        std::string name,
-        u32 width,
-        u32 height,
-        u8 channel_count,
-        u8 has_transparency,
-        u8* pixels) {
-        
-        return CreateRef<VulkanTexture>(name, width, height, channel_count, has_transparency, pixels);
-    }
+    VulkanTexture* VulkanRendererBackend::CreateTextureInternal(TextureCreateInfo& info) {
+        return new VulkanTexture(info);
+    };
+
+    Material* VulkanRendererBackend::CreateMaterial(MaterialCreateInfo& info) {
+        // default_shader->AcquireResources();
+    };
 
 };

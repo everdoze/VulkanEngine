@@ -7,16 +7,6 @@
 
 namespace Engine {
 
-    // struct RegisteredTexture {
-    //     u32 reference_count = 0;
-    //     Ref<Texture> handle = nullptr;
-    //     b8 auto_release = false;
-
-    //     operator bool() const {
-    //         return !!handle;
-    //     }
-    // };
-
     class TextureSystem {
         public:
             TextureSystem();
@@ -24,22 +14,22 @@ namespace Engine {
 
             static b8 Initialize();
             static void Shutdown();
-            static Ref<TextureSystem> GetInstance();
+            static TextureSystem* GetInstance();
 
-            Ref<Texture> AcquireTexture(std::string name, b8 auto_release);
+            Texture* AcquireTexture(std::string name, b8 auto_release);
             void ReleaseTexture(std::string name);
 
             b8 CreateDefaultTextures();
             void DestroyDefaultTextures();
 
-            Ref<Texture> GetDefaultTexture() { return default_texture; };
+            Texture* GetDefaultTexture() { return default_texture; };
 
-            Ref<Texture> LoadTexture(std::string texture_name);
+            Texture* LoadTexture(std::string texture_name);
         
         private:
-            static Ref<TextureSystem> instance;
-            Ref<Texture> default_texture;
-            std::unordered_map<std::string, Ref<Texture>> registered_textures;
+            static TextureSystem* instance;
+            Texture* default_texture;
+            std::unordered_map<std::string, Texture*> registered_textures;
     };
 
 };

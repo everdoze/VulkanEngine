@@ -5,7 +5,7 @@ class Test : public Engine::Application {
     using Engine::Application::Application;
 
     public:
-        Engine::Ref<Engine::Camera> camera;
+        Engine::Camera* camera;
 
         b8 GameInitialize() {
             camera = GetCamera();
@@ -13,7 +13,7 @@ class Test : public Engine::Application {
         };
 
         b8 GameUpdate(f32 delta) {
-            Engine::Ref<Engine::InputSystem> input = Engine::InputSystem::GetInstance();
+            Engine::InputSystem* input = Engine::InputSystem::GetInstance();
 
             if (input->IsKeyUp(Engine::Keys::KEYBOARD_T) && input->WasKeyDown(Engine::Keys::KEYBOARD_T)) {
                 Engine::EventSystem::GetInstance()->FireEvent(Engine::EventType::Debug1, {});
@@ -68,12 +68,12 @@ class Test : public Engine::Application {
 
 };
 
-Engine::Ref<Engine::Application> Engine::CreateApplication(Engine::ApplicationCommandLineArgs args) {
+Engine::Application* Engine::CreateApplication(Engine::ApplicationCommandLineArgs args) {
     Engine::ApplicationSetup setup;
     setup.height = 600;
     setup.width = 800;
     setup.start_x = 100;
     setup.start_y = 100;
     setup.name = "name";
-    return Engine::CreateRef<Test>(setup, args);
+    return new Test(setup, args);
 }

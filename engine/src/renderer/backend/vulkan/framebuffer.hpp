@@ -12,7 +12,7 @@ namespace Engine {
             VkImageView* attachments;
 
             VulkanFramebuffer(
-                Ref<class VulkanRenderpass> renderpass,
+                class VulkanRenderpass* renderpass,
                 u32 width,
                 u32 height,
                 u32 attachment_count,
@@ -22,7 +22,7 @@ namespace Engine {
             ~VulkanFramebuffer();
 
         private:
-            Ref<class VulkanRenderpass> renderpass;
+            class VulkanRenderpass* renderpass;
     };
 
 };

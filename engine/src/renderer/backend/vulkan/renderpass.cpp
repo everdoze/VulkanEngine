@@ -12,7 +12,7 @@ namespace Engine {
         f32 r, f32 g, f32 b, f32 a,
         f32 depth, u32 stencil) {
         
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         this->ready = false;
 
@@ -125,7 +125,7 @@ namespace Engine {
 
     VulkanRenderpass::~VulkanRenderpass() {
         if (this->handle) {
-            Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+            VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
             vkDestroyRenderPass(
                 backend->GetVulkanDevice()->logical_device,
                 this->handle,
@@ -135,10 +135,10 @@ namespace Engine {
         }
     };
 
-    void VulkanRenderpass::Begin(Ref<VulkanCommandBuffer> command_buffer) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+    void VulkanRenderpass::Begin(VulkanCommandBuffer* command_buffer) {
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         VkRenderPassBeginInfo begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-        Ref<VulkanSwapchain> swapchain = backend->GetVulkanSwapchain();
+        VulkanSwapchain* swapchain = backend->GetVulkanSwapchain();
 
         begin_info.renderPass = this->handle;
         begin_info.framebuffer = swapchain->framebuffers[backend->GetImageIndex()]->handle;
@@ -164,7 +164,7 @@ namespace Engine {
         command_buffer->InRenderPass();
     };
 
-    void VulkanRenderpass::End(Ref<VulkanCommandBuffer> command_buffer) {
+    void VulkanRenderpass::End(VulkanCommandBuffer* command_buffer) {
         vkCmdEndRenderPass(command_buffer->handle);
         command_buffer->Recording();
     };

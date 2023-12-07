@@ -26,7 +26,7 @@ namespace Engine {
     };
     
     void Camera::GenerateProjectionMatrix() {
-        Ref<RendererFrontend> frontend = RendererFrontend::GetInstance();
+        RendererFrontend* frontend = RendererFrontend::GetInstance();
         projection = glm::perspective(fov, frontend->GetFrameWidth() / (f32)frontend->GetFrameHeight(), near_clip, far_clip);
     };
 

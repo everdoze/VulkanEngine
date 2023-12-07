@@ -8,7 +8,7 @@
 namespace Engine {
 
     VulkanPipeline::VulkanPipeline(
-        Ref<VulkanRenderpass> renderpass,
+        VulkanRenderpass* renderpass,
         u32 attribute_count,
         VkVertexInputAttributeDescription* attributes,
         u32 descriptor_set_layout_count,
@@ -19,7 +19,7 @@ namespace Engine {
         VkRect2D scissor,
         b8 is_wireframe) {
         
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         this->renderpass = renderpass;
 
@@ -174,7 +174,7 @@ namespace Engine {
     };
 
     VulkanPipeline::~VulkanPipeline() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         
         if (this->handle) {
             vkDestroyPipeline(
@@ -191,7 +191,7 @@ namespace Engine {
         }
     };
 
-    void VulkanPipeline::Bind(Ref<VulkanCommandBuffer> command_buffer, VkPipelineBindPoint bind_point) {
+    void VulkanPipeline::Bind(VulkanCommandBuffer* command_buffer, VkPipelineBindPoint bind_point) {
         vkCmdBindPipeline(command_buffer->handle, bind_point, this->handle);
     };
 

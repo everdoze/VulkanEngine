@@ -10,7 +10,7 @@
 
 namespace Engine {
     
-    Ref<TextureSystem> TextureSystem::instance = nullptr;
+    TextureSystem* TextureSystem::instance = nullptr;
 
     TextureSystem::TextureSystem() {
         CreateDefaultTextures();
@@ -18,22 +18,28 @@ namespace Engine {
 
     TextureSystem::~TextureSystem() {
         DestroyDefaultTextures();
+        INFO("%i", registered_textures.size());
+
+        for (auto& [key, texture] : registered_textures) { 
+            delete texture;
+        } 
+
         registered_textures.clear();
         INFO("%i", registered_textures.size());
     };
 
     b8 TextureSystem::Initialize() {
         if (!instance) {
-            instance = CreateRef<TextureSystem>();
+            instance = new TextureSystem();
         }
         return true;
     };
 
     void TextureSystem::Shutdown() {
-        instance = nullptr;
+        delete instance;
     };
 
-    Ref<TextureSystem> TextureSystem::GetInstance() {
+    TextureSystem* TextureSystem::GetInstance() {
         if (instance) {
             return instance;
         }
@@ -41,7 +47,7 @@ namespace Engine {
         return nullptr;
     };
 
-    Ref<Texture> TextureSystem::AcquireTexture(std::string name, b8 auto_release) {
+    Texture* TextureSystem::AcquireTexture(std::string name, b8 auto_release) {
         if (name == DEFAULT_TEXTURE_NAME) {
             WARN("TextureSystem::AcquireTexture called for default texture.");
             return default_texture;
@@ -104,20 +110,23 @@ namespace Engine {
             }
         }
 
-        default_texture = RendererFrontend::GetInstance()->CreateTexture(
-            DEFAULT_TEXTURE_NAME,
-            tex_dimension, tex_dimension,
-            channels, false,
-            pixels);
+        TextureCreateInfo create_info;
+        create_info.name = DEFAULT_TEXTURE_NAME;
+        create_info.width = tex_dimension;
+        create_info.height = tex_dimension;
+        create_info.channel_count = channels;
+        create_info.has_transparency = false;
+        create_info.pixels = pixels;
+        default_texture = RendererFrontend::GetInstance()->CreateTexture(create_info);
 
         return true;
     };
 
     void TextureSystem::DestroyDefaultTextures() {
-        default_texture = nullptr;
+        delete default_texture;
     };
 
-    Ref<Texture> TextureSystem::LoadTexture(std::string texture_name) {
+    Texture* TextureSystem::LoadTexture(std::string texture_name) {
         std::string file_path = StringFormat("assets/textures/%s.%s", texture_name.c_str(), "png");
         stbi_set_flip_vertically_on_load(true);
 
@@ -134,7 +143,7 @@ namespace Engine {
             required_channel_count);
 
 
-        Ref<Texture> texture = nullptr;
+        Texture* texture = nullptr;
 
         if (data) {
             u64 total_size = width * height * required_channel_count;
@@ -151,11 +160,14 @@ namespace Engine {
                 stbi__err(0, 0);
             }
 
-            texture = RendererFrontend::GetInstance()->CreateTexture(
-                texture_name, width, height,
-                required_channel_count, has_transparency,
-                data
-            );
+            TextureCreateInfo create_info;
+            create_info.name = texture_name;
+            create_info.width = width;
+            create_info.height = height;
+            create_info.channel_count = required_channel_count;
+            create_info.has_transparency = has_transparency;
+            create_info.pixels = data;
+            texture = RendererFrontend::GetInstance()->CreateTexture(create_info);
 
             texture->UpdateGeneration();
 

@@ -26,34 +26,37 @@
 #include <crtdbg.h> 
 #endif
 
-namespace Engine {
+// namespace Engine {
 
-	template<typename T>
-	using Unique = std::unique_ptr<T>;
+// 	template<typename T>
+// 	using Unique = std::unique_ptr<T>;
 
-	template<typename T, typename ... Args>
-	constexpr Unique<T> CreateUnique(Args&& ... args) {
-		return std::make_unique<T>(std::forward<Args>(args)...);
-	}
+// 	template<typename T, typename ... Args>
+// 	constexpr Unique<T> CreateUnique(Args&& ... args) {
+// 		return std::make_unique<T>(std::forward<Args>(args)...);
+// 	}
 
-	template<typename T>
-	using Ref = std::shared_ptr<T>;
+// 	template<typename T>
+// 	using Ref = std::shared_ptr<T>;
 
-	template<typename T, typename ... Args>
-	constexpr Ref<T> CreateRef(Args&& ... args) {
-		return std::make_shared<T>(std::forward<Args>(args)...);
-	}
+// 	template<typename T, typename ... Args>
+// 	constexpr Ref<T> CreateRef(Args&& ... args) {
+// 		return std::make_shared<T>(std::forward<Args>(args)...);
+// 	}
 
-    template<typename T, typename U>
-    constexpr Ref<T> Cast(const std::shared_ptr<U>& r) {
-        auto p = static_cast<typename std::shared_ptr<T>::element_type*>(r.get());
-        return std::shared_ptr<T>{r, p};
-    }
-
-}
+//     template<typename T, typename U>
+//     constexpr Ref<T> Cast(const std::shared_ptr<U>& r) {
+//         auto p = static_cast<typename std::shared_ptr<T>::element_type*>(r.get());
+//         return std::shared_ptr<T>{r, p};
+//     }
+// }
 
 #define MODE_3D false
 #define PIXEL_SIZE 4
+
+// Just char
+typedef char c8;
+
 // Unsigned int types
 typedef unsigned char u8;
 typedef unsigned short u16;

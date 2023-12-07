@@ -3,6 +3,7 @@
 #include "defines.hpp"
 #include "camera/camera.hpp"
 #include "resources/texture/texture.hpp"
+#include "resources/material/material.hpp"
 #include "renderer_types.inl"
 
 namespace Engine {
@@ -40,14 +41,8 @@ namespace Engine {
             u32 GetFrameWidth() { return width; };
             u32 GetFrameHeight() { return height; };
 
-            virtual Ref<Texture> CreateTexture(
-                std::string name,
-                u32 width,
-                u32 height,
-                u8 channel_count,
-                u8 has_transparency,
-                u8* pixels
-            ) = 0;
+            virtual Texture* CreateTexture(TextureCreateInfo& info) = 0;
+            virtual Material* CreateMaterial(MaterialCreateInfo& info) = 0;
 
         protected:
             std::string name;
@@ -61,25 +56,19 @@ namespace Engine {
         public: 
             static b8 Initialize(RendererSetup setup, RendererBackendType type);
             static void Shutdown();
-            static Ref<RendererFrontend> GetInstance();
-            static Ref<RendererBackend> GetBackend() { return instance->backend; };
+            static RendererFrontend* GetInstance();
+            static RendererBackend* GetBackend() { return instance->backend; };
             static b8 DrawFrame(f32 delta_time);
 
             void Resized(u16 width, u16 height);
 
-            Ref<Camera> GetCamera() { return camera; };
+            Camera* GetCamera() { return camera; };
             u32 GetFrameWidth() { return backend->GetFrameWidth(); };
             u32 GetFrameHeight() { return backend->GetFrameHeight(); };
-
-            Ref<Texture> CreateTexture(
-                std::string name,
-                u32 width,
-                u32 height,
-                u8 channel_count,
-                u8 has_transparency,
-                u8* pixels
-            );
             
+            Texture* CreateTexture(TextureCreateInfo& info);
+            Material* CreateMaterial(MaterialCreateInfo& info);
+
         private:
             b8 BeginFrame(f32 delta_time);
             b8 EndFrame(f32 delta_time);
@@ -96,14 +85,14 @@ namespace Engine {
             void CreateCamera();
             void DestroyCamera();
 
-            static Ref<RendererFrontend> instance;
-            Ref<RendererBackend> backend;
+            static RendererFrontend* instance;
+            RendererBackend* backend;
 
-            Ref<Camera> camera;
+            Camera* camera;
 
-            Ref<Texture> test_texture;
+            Texture* test_texture;
 
-            u8 current_texture = 2;
+            u8 current_texture = 1;
     };
 
 };

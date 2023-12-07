@@ -11,7 +11,7 @@ namespace Engine {
     VulkanCommandBuffer::VulkanCommandBuffer(
         VkCommandPool pool,
         b8 is_primary) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         
         this->pool = pool;
 
@@ -29,7 +29,7 @@ namespace Engine {
     };
 
     VulkanCommandBuffer::~VulkanCommandBuffer() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         vkFreeCommandBuffers(
             backend->GetVulkanDevice()->logical_device,
             pool,

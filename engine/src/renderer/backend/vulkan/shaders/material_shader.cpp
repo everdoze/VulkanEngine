@@ -12,7 +12,7 @@
 namespace Engine {
 
     VulkanShader::VulkanShader(std::string name) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         this->ready = false;
         this->name = name;
@@ -158,7 +158,7 @@ namespace Engine {
             stage_create_infos[i] = this->stages[i].shader_stage_create_info;
         }
 
-        this->pipeline = CreateRef<VulkanPipeline>(
+        this->pipeline = new VulkanPipeline(
             backend->GetMainRenderpass(),
             attribute_count,
             attribute_descriptions,
@@ -176,7 +176,7 @@ namespace Engine {
         }
 
         u32 device_local_bit = backend->GetVulkanDevice()->supports_device_local_host_visible ? VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT : 0;
-        this->global_uniform_buffer = CreateRef<VulkanBuffer>(
+        this->global_uniform_buffer = new VulkanBuffer(
             sizeof(GlobalUniformObject), 
             (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | device_local_bit,
@@ -202,7 +202,7 @@ namespace Engine {
             &alloc_info, 
             this->global_descriptor_sets));
 
-        this->material_uniform_buffer = CreateRef<VulkanBuffer>(
+        this->material_uniform_buffer = new VulkanBuffer(
             sizeof(MaterialUniformObject), 
             (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -217,7 +217,7 @@ namespace Engine {
     };
 
     VulkanShader::~VulkanShader() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         // Destroy material descriptor pool.
         vkDestroyDescriptorPool(
@@ -232,13 +232,13 @@ namespace Engine {
             backend->GetVulkanAllocator());
 
         // Destroy material uniform buffer
-        this->material_uniform_buffer = nullptr;
+        delete this->material_uniform_buffer;
         // Destroy global uniform buffer
-        this->global_uniform_buffer = nullptr;
+        delete this->global_uniform_buffer;
 
         // Destroy pipeline
         if (this->pipeline) {
-            this->pipeline = nullptr;
+            delete this->pipeline;
         }
         
         // Destroy global descriptor pool.
@@ -269,7 +269,7 @@ namespace Engine {
         VkShaderStageFlagBits shader_stage_flag,
         VulkanShaderStage* out_shader_stage) {
         
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         
         std::string file_name = StringFormat("assets/shaders/%s.%s.spv", name.c_str(), type.c_str());
 
@@ -282,18 +282,18 @@ namespace Engine {
             return false;
         }
 
-        std::vector<char> bytes = file->ReadAllBytes();
+        std::vector<c8> bytes = file->ReadAllBytes();
 
         if (bytes.size() == 0) {
             ERROR("Unable to binary read shader module: %s.", file_name.c_str());
             return false;
         }
 
+        FileSystem::FileClose(file);
+
         out_shader_stage->create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         out_shader_stage->create_info.codeSize = bytes.size();
         out_shader_stage->create_info.pCode = (u32*)bytes.data();
-
-        FileSystem::FileClose(file);
 
         VK_CHECK(vkCreateShaderModule(
             backend->GetVulkanDevice()->logical_device,
@@ -311,14 +311,14 @@ namespace Engine {
     };
 
     void VulkanShader::Use() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         u32 image_index = backend->GetImageIndex();
-        Ref<VulkanCommandBuffer> command_buffer = backend->GetGraphicsCommandBufers()[image_index];
+        VulkanCommandBuffer* command_buffer = backend->GetGraphicsCommandBufers()[image_index];
         this->pipeline->Bind(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
     };
 
     void VulkanShader::UpdateGlobalState() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         u32 image_index = backend->GetImageIndex();
         VkCommandBuffer command_buffer = backend->GetGraphicsCommandBufers()[image_index]->handle;
         VkDescriptorSet global_descriptor = this->global_descriptor_sets[image_index];
@@ -352,7 +352,7 @@ namespace Engine {
     };
 
     void VulkanShader::UpdateObject(GeometryRenderData data) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         u32 image_index = backend->GetImageIndex();
         VkCommandBuffer command_buffer = backend->GetGraphicsCommandBufers()[image_index]->handle;
 
@@ -403,11 +403,11 @@ namespace Engine {
         const u32 sampler_count = 1;
         VkDescriptorImageInfo image_infos[sampler_count];
         for (u32 i = 0; i < sampler_count; ++i) {
-            Ref<VulkanTexture> t = Cast<VulkanTexture>(data.textures[i]);
+            VulkanTexture* t = static_cast<VulkanTexture*>(data.textures[i]);
             u32* descriptor_generation = &material_state->descriptor_states[descriptor_index].generations[image_index];
 
             if (!t) {
-                t = Cast<VulkanTexture>(TextureSystem::GetInstance()->GetDefaultTexture());
+                t = static_cast<VulkanTexture*>(TextureSystem::GetInstance()->GetDefaultTexture());
             }
 
             // Check if the descriptor needs updating first
@@ -452,7 +452,7 @@ namespace Engine {
     };
 
     b8 VulkanShader::AcquireResources(u32* out_material_id) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         *out_material_id = instance_states.size();
 
         u32 material_id = *out_material_id;
@@ -489,7 +489,7 @@ namespace Engine {
     };
     
     void VulkanShader::ReleaseResources(u32 material_id) {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         VulkanMaterialShaderInstanceState* instance_state = &instance_states[material_id];
 
         const u32 descriptor_set_count = 3;

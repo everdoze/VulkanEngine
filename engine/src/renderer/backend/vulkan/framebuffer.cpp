@@ -10,13 +10,13 @@
 namespace Engine {
 
     VulkanFramebuffer::VulkanFramebuffer(
-        Ref<VulkanRenderpass> renderpass,
+        VulkanRenderpass* renderpass,
         u32 width,
         u32 height,
         u32 attachment_count,
         VkImageView* attachments) {
         
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         this->renderpass = renderpass;
 
@@ -24,7 +24,6 @@ namespace Engine {
         for (u32 i = 0; i < attachment_count; ++i) {
             this->attachments[i] = attachments[i];
         }
-        this->renderpass = renderpass;
         this->attachment_count = attachment_count;
 
         VkFramebufferCreateInfo fb_create_info = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
@@ -44,7 +43,7 @@ namespace Engine {
     };
 
     VulkanFramebuffer::~VulkanFramebuffer() {
-        Ref<VulkanRendererBackend> backend = Cast<VulkanRendererBackend>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         vkDestroyFramebuffer(
             backend->GetVulkanDevice()->logical_device,
             this->handle,

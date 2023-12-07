@@ -4,18 +4,25 @@
 
 namespace Engine {
 
+    enum class TextureUse {
+        UNKNOWN = 0x00,
+        MAP_DIFFUSE = 0x01
+    };
+
+    struct TextureCreateInfo {
+        public:
+            std::string name;
+            u32 width;
+            u32 height;
+            u8 channel_count;
+            u8 has_transparency;
+            u8* pixels;
+    };
+
     class Texture {
         public:
-            Texture(
-                std::string name,
-                u32 width,
-                u32 height,
-                u8 channel_count,
-                u8 has_transparency,
-                u8* pixels
-            );
-
-            ~Texture();
+            Texture(TextureCreateInfo& info);
+            virtual ~Texture();
 
             u32 GetId() { return id; };
             u32 GetWidth() { return width; };

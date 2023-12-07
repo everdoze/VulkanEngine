@@ -74,7 +74,7 @@ namespace Engine {
         public:
             static b8 Initialize();
             static void Shutdown();
-            static Ref<EventSystem> GetInstance();
+            static EventSystem* GetInstance();
 
 
             b8 RegisterEvent(EventType type, std::string listener, SlotType handler);
@@ -82,7 +82,7 @@ namespace Engine {
             b8 FireEvent(EventType type, EventContext data);
         private:
             std::vector<EventDispatcher> codes;
-            static Ref<EventSystem> instance;
+            static EventSystem* instance;
     };
 
 };

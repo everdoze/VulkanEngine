@@ -5,13 +5,14 @@
 #include "renderer/renderer.hpp"
 
 #include "systems/texture/texture_system.hpp"
+#include "systems/material/material_system.hpp"
 
 #include "platform/filesystem.hpp"
 
 namespace Engine {
 
     b8 Application::RegisterEvents() {
-        Ref<EventSystem> event = EventSystem::GetInstance();
+        EventSystem* event = EventSystem::GetInstance();
 
         // On application quit
         event->RegisterEvent(
@@ -41,7 +42,7 @@ namespace Engine {
         return true;
     };
 
-    Ref<Camera> Application::GetCamera() {
+    Camera* Application::GetCamera() {
         return RendererFrontend::GetInstance()->GetCamera();
     };
 
@@ -86,6 +87,14 @@ namespace Engine {
             FATAL("Error during TextureSystem initialization.");
             return;
         }
+
+        if (!MaterialSystem::Initialize()) {
+            SetReady(false);
+            FATAL("Error during MaterialSystem initialization.");
+            return;
+        }
+
+        MaterialSystem::GetInstance()->AcquireMaterial("test");
 
         SetReady(true);
         DEBUG("Application successfully initialized.");

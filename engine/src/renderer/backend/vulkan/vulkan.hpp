@@ -19,7 +19,7 @@ namespace Engine {
             VulkanRendererBackend(RendererSetup setup) : RendererBackend(setup) {};
             ~VulkanRendererBackend() {};
 
-            std::vector<Ref<VulkanCommandBuffer>>& GetGraphicsCommandBufers() { return graphics_command_buffers; };
+            std::vector<VulkanCommandBuffer*>& GetGraphicsCommandBufers() { return graphics_command_buffers; };
 
             VkSurfaceKHR GetVulkanSurface() { return surface; };
             void SetVulkanSurface(VkSurfaceKHR surface);
@@ -28,29 +28,16 @@ namespace Engine {
 
             VkInstance GetVulkanInstance() { return vulkan_instance; };
 
-            Ref<VulkanRenderpass> GetMainRenderpass() { return main_renderpass; };
+            VulkanRenderpass* GetMainRenderpass() { return main_renderpass; };
            
             VkAllocationCallbacks* GetVulkanAllocator() { return allocator; };
-            Ref<Device> GetVulkanDevice() { return device; };
-            Ref<VulkanSwapchain> GetVulkanSwapchain () { return swapchain; };
+            Device* GetVulkanDevice() { return device; };
+            VulkanSwapchain* GetVulkanSwapchain () { return swapchain; };
 
-            Ref<Texture> CreateTexture(
-                std::string name,
-                u32 width,
-                u32 height,
-                u8 channel_count,
-                u8 has_transparency,
-                u8* pixels
-            );
+            Texture* CreateTexture(TextureCreateInfo& info);
+            VulkanTexture* CreateTextureInternal(TextureCreateInfo& info);
 
-            Ref<VulkanTexture> CreateTextureInternal(
-                std::string name,
-                u32 width,
-                u32 height,
-                u8 channel_count,
-                u8 has_transparency,
-                u8* pixels
-            );
+            Material* CreateMaterial(MaterialCreateInfo& info);
 
             void DrawGeometry();
 
@@ -85,7 +72,7 @@ namespace Engine {
 
             b8 RenderpassCreate();
 
-            void UploadDataRange(VkCommandPool pool, VkFence fence, VkQueue queue, Ref<VulkanBuffer> buffer, u64 offset, u64 size, void* data);
+            void UploadDataRange(VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, u64 offset, u64 size, void* data);
 
         private:
             // Adding debugger only for debug mode
@@ -100,24 +87,24 @@ namespace Engine {
             u64 framebuffer_generation;
             u64 framebuffer_last_generation;
 
-            std::vector<Ref<VulkanCommandBuffer>> graphics_command_buffers;
+            std::vector<VulkanCommandBuffer*> graphics_command_buffers;
             std::vector<VkSemaphore> image_available_semaphores;
             std::vector<VkSemaphore> queue_complete_semaphores;
 
             u32 in_flight_fence_count;
-            std::vector<Ref<VulkanFence>> in_flight_fences;
-            std::vector<Ref<VulkanFence>> images_in_flight;
+            std::vector<VulkanFence*> in_flight_fences;
+            std::vector<VulkanFence*> images_in_flight;
 
-            Ref<VulkanBuffer> object_vertex_buffer;
-            Ref<VulkanBuffer> object_index_buffer;
+            VulkanBuffer* object_vertex_buffer;
+            VulkanBuffer* object_index_buffer;
 
             u32 image_index;
             u32 current_frame;
 
-            Ref<VulkanShader> default_shader;
-            Ref<Device> device;
-            Ref<VulkanSwapchain> swapchain;
-            Ref<VulkanRenderpass> main_renderpass;
+            VulkanShader* default_shader;
+            Device* device;
+            VulkanSwapchain* swapchain;
+            VulkanRenderpass* main_renderpass;
 
             VkSurfaceKHR surface;
             VkInstance vulkan_instance;

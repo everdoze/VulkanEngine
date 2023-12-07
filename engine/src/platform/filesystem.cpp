@@ -5,17 +5,17 @@
 
 namespace Engine {
 
-    std::vector<char> File::ReadAllBytes() {
+    std::vector<c8> File::ReadAllBytes() {
         if (!binary || !handle.is_open() || mode != FileMode::READ) {
-            return std::vector<char>();
+            return std::vector<c8>();
         }
         std::ifstream::pos_type pos = handle.tellg();
 
         if (pos == 0) {
-            return std::vector<char>();
+            return std::vector<c8>();
         }
 
-        std::vector<char>  result(pos);
+        std::vector<c8>  result(pos);
 
         handle.seekg(0, std::ios::beg);
         handle.read(result.data(), pos);
@@ -31,13 +31,14 @@ namespace Engine {
         return true;
     };
 
-    std::string File::ReadLine() {
+    b8 File::ReadLine(std::string& line) {
         if (binary) {
-            return nullptr;
+            return false;
         }
-        std::string line;
-        std::getline(this->handle, line);
-        return line;
+        if (!std::getline(this->handle, line)) {
+            return false;
+        }
+        return true;
     };
 
     std::vector<std::string> File::ReadAllLines() {
@@ -67,11 +68,6 @@ namespace Engine {
             this->handle.open(path, std::ios::app);
         }
 
-        // auto open_mode = binary ? std::fstream::binary | 
-        //     (mode == FileMode::READ ? std::fstream::in : std::fstream::app) : 
-        //     (mode == FileMode::READ ? std::fstream::in : std::fstream::app);
-    
-        // this->handle.open(path, open_mode);
         if (!this->handle.fail()) {
             ready = true;
         }
@@ -82,13 +78,6 @@ namespace Engine {
     };
 
     b8 FileSystem::FileExists(std::string path) {
-        // #ifdef _MSC_VER
-        //     struct _stat buffer;
-        //     return _stat(path.c_str(), &buffer);
-        // #else
-        //     struct stat buffer;
-        //     return stat(path.c_str(), &buffer) == 0;
-        // #endif
         if (std::filesystem::exists(path)) { 
             return true;
         } else { 
@@ -99,7 +88,7 @@ namespace Engine {
     File* FileSystem::FileOpen(std::string path, FileMode mode, b8 binary) {
         return new File(path, mode, binary);
     };
-    
+
     void FileSystem::FileClose(File* file) {
         delete file;
     };
