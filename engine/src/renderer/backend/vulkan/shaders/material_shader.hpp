@@ -5,6 +5,7 @@
 #include "../buffer.hpp"
 #include "../vulkan_texture.hpp"
 #include "renderer/renderer_types.inl"
+#include "resources/material/material.hpp"
 
 #define VULKAN_MATERIAL_SHADER_STAGE_COUNT 2
 #define VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT 2
@@ -59,7 +60,7 @@ namespace Engine {
             void UpdateGlobalState();
             void UpdateObject(GeometryRenderData data);
 
-            b8 AcquireResources(u32* out_material_id);
+            b8 AcquireResources(Material* material);
             void ReleaseResources(u32 material_id);
 
             b8 CreateShaderStage(

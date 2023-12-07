@@ -1,4 +1,6 @@
 #include "material_system.hpp"
+#include "systems/texture/texture_system.hpp"
+#include "renderer/renderer.hpp"
 
 #include "core/logger/logger.hpp"
 #include "core/utils/string.hpp"
@@ -23,7 +25,13 @@ namespace Engine {
     };
 
     void MaterialSystem::CreateDefaultMaterial() {
-        default_material = new Material();
+        MaterialCreateInfo mat_create_info = {};
+        mat_create_info.name = DEFAULT_MATERIAL_NAME;
+        mat_create_info.diffuse_color = glm::vec4(1, 1, 1, 1);
+        mat_create_info.use = TextureUse::MAP_DIFFUSE;
+        mat_create_info.texture = TextureSystem::GetInstance()->GetDefaultTexture();
+
+        default_material = RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
     };
 
     void MaterialSystem::DestroyDefaultMaterial() {
@@ -57,8 +65,26 @@ namespace Engine {
         return AcquireMaterialFromConfig(config);
     };
 
-    Material* MaterialSystem::LoadMaterial() {
-        return nullptr;
+    Material* MaterialSystem::LoadMaterial(MaterialConfig& config) {
+        MaterialCreateInfo mat_create_info = {};
+        mat_create_info.name = config.name;
+        mat_create_info.diffuse_color = config.diffuse_color;
+
+        TextureSystem* ts = TextureSystem::GetInstance();
+
+        if (config.name.size()) {
+            mat_create_info.use = TextureUse::MAP_DIFFUSE;
+            mat_create_info.texture = ts->AcquireTexture(config.diffuse_map_name, true);
+            if (!mat_create_info.texture) {
+                WARN("Unable to load texture '%s' for material '%s', using default.", config.diffuse_map_name.c_str(), mat_create_info.name.c_str());
+                mat_create_info.texture = ts->GetDefaultTexture();
+            }
+        } else {
+            mat_create_info.texture = nullptr;
+            mat_create_info.use = TextureUse::UNKNOWN;
+        }
+
+        return RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
     };
 
     Material* MaterialSystem::AcquireMaterialFromConfig(MaterialConfig& config) {
@@ -69,7 +95,7 @@ namespace Engine {
         if (registered_materials[config.name]) {
             return registered_materials[config.name];
         } else {
-            registered_materials[config.name] = LoadMaterial();
+            registered_materials[config.name] = LoadMaterial(config);
 
             if (!registered_materials[config.name]) {
                 ERROR("Failed to load texture '%s'.", config.name.c_str());

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "defines.hpp"
-#include "resources/texture/texture.hpp"
+#include "resources/material/material.hpp"
 
 namespace Engine {
 
@@ -29,7 +29,7 @@ namespace Engine {
     typedef struct GeometryRenderData {
         u32 object_id;
         glm::mat4 model;
-        Texture* textures[16];
+        Material* material;
     } GeometryRenderData;
 
 };

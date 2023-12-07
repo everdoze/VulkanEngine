@@ -403,7 +403,8 @@ namespace Engine {
         const u32 sampler_count = 1;
         VkDescriptorImageInfo image_infos[sampler_count];
         for (u32 i = 0; i < sampler_count; ++i) {
-            VulkanTexture* t = static_cast<VulkanTexture*>(data.textures[i]);
+            Material* material = data.material;
+            VulkanTexture* t = static_cast<VulkanTexture*>(material->GetDiffuseMap().texture);
             u32* descriptor_generation = &material_state->descriptor_states[descriptor_index].generations[image_index];
 
             if (!t) {
@@ -451,11 +452,11 @@ namespace Engine {
         );
     };
 
-    b8 VulkanShader::AcquireResources(u32* out_material_id) {
+    b8 VulkanShader::AcquireResources(Material* material) {
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
-        *out_material_id = instance_states.size();
+        u32 material_id = instance_states.size();
+        material->SetInternalId(material_id);
 
-        u32 material_id = *out_material_id;
         VulkanMaterialShaderInstanceState instance_state;
         for (u32 i = 0; i < VULKAN_MATERIAL_SHADER_DESCRIPTOR_COUNT; ++i) {
             for (u32 j = 0; j < 3; ++j) {

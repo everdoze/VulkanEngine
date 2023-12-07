@@ -6,7 +6,7 @@
 #include "core/utils/string.hpp"
 
 // TODO: TEMP
-#include "systems/texture/texture_system.hpp"
+#include "systems/material/material_system.hpp"
 #include "core/event/event.hpp"
 // TODO: TEMP END
 
@@ -21,33 +21,34 @@ namespace Engine {
         return nullptr;
     };
 
-    // void RendererFrontend::SetViewMatrix(glm::mat4 view) {
-    //     this->view = view;
-    // }
 
     b8 RendererFrontend::OnDebugEvent(EventType type, EventContext context) {
-        const char* names[2] = {
-            "cobblestone",
-            "paving"
-        };
+        // const int names_count = 2;
+        // const char* names[names_count] = {
+        //     "cobblestone",
+        //     "paving"
+        // };
 
-        TextureSystem* ts = TextureSystem::GetInstance();
+        // TextureSystem* ts = TextureSystem::GetInstance();
 
-        const char* old_name = names[current_texture];
+        // const char* old_name = current_texture < names_count ? names[current_texture] : nullptr;
 
-        current_texture = (current_texture + 1) % 2;
+        // current_texture = (current_texture + 1) % 2;
         
-        u32 old_gen = 0;
-        if (test_texture) {
-            old_gen = test_texture->GetGeneration();
-        }
+        // u32 old_gen = 0;
+        // if (test_texture) {
+        //     old_gen = test_texture->GetGeneration();
+        // }
 
-        test_texture = ts->AcquireTexture(names[current_texture], true);
+        // test_texture = ts->AcquireTexture(names[current_texture], true);
 
-        test_texture->SetGeneration(old_gen+1);
+        // test_texture->SetGeneration(old_gen+1);
+
+        // if (old_name) {
+        //     ts->ReleaseTexture(old_name);
+        // }
         
-        ts->ReleaseTexture(old_name);
-
+        // return true;
         return true;
     };
 
@@ -97,7 +98,6 @@ namespace Engine {
 
     void RendererFrontend::Shutdown() {
         if (instance) {
-            delete instance->test_texture;
             EventSystem::GetInstance()->UnregisterEvent(
                 EventType::Debug1,
                 "Renderer"
@@ -130,10 +130,14 @@ namespace Engine {
 
             instance->backend->UpdateGlobalState(instance->camera->GetProjectionMatrix(), instance->camera->GetViewMatrix(), glm::vec3(), glm::vec4(1), 0);
             
+            if (!instance->test_material) {
+                instance->test_material = MaterialSystem::GetInstance()->AcquireMaterial("test");
+            }
+
             GeometryRenderData data = {};
             data.model = glm::mat4(1.0f);
             data.object_id = 0;
-            data.textures[0] = instance->test_texture;
+            data.material = instance->test_material;
             instance->backend->UpdateObject(data);
 
             b8 result = instance->EndFrame(delta_time);

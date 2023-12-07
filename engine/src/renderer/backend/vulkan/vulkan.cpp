@@ -233,11 +233,11 @@ namespace Engine {
         UploadDataRange(device->graphics_command_pool, 0, device->graphics_queue, object_vertex_buffer, 0, sizeof(Vertex3D) * vert_count, verts);
         UploadDataRange(device->graphics_command_pool, 0, device->graphics_queue, object_index_buffer, 0, sizeof(u32) * index_count, indices);
 
-        obj_id = 0;
-        if (!this->default_shader->AcquireResources(&obj_id)) {
-            ERROR("Unable to acquire shader resources.");
-            return false;
-        }
+        // obj_id = 0;
+        // if (!this->default_shader->AcquireResources(&obj_id)) {
+        //     ERROR("Unable to acquire shader resources.");
+        //     return false;
+        // }
 
         // TODO: end temp code
 
@@ -690,7 +690,11 @@ namespace Engine {
     };
 
     Material* VulkanRendererBackend::CreateMaterial(MaterialCreateInfo& info) {
-        // default_shader->AcquireResources();
+        Material* material = new Material(info);
+        if (!default_shader->AcquireResources(material)) {
+            ERROR("Unable to acquire resources for material: '%s'", material->GetName().c_str());
+        };
+        return material;
     };
 
 };

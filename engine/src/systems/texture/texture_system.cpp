@@ -18,14 +18,12 @@ namespace Engine {
 
     TextureSystem::~TextureSystem() {
         DestroyDefaultTextures();
-        INFO("%i", registered_textures.size());
 
         for (auto& [key, texture] : registered_textures) { 
             delete texture;
         } 
 
         registered_textures.clear();
-        INFO("%i", registered_textures.size());
     };
 
     b8 TextureSystem::Initialize() {
@@ -76,6 +74,7 @@ namespace Engine {
         }
 
         if (registered_textures[name]) {
+            delete registered_textures[name];
             registered_textures.erase(name);
             return;
         }

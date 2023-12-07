@@ -90,9 +90,9 @@ namespace Engine {
 
             Camera* camera;
 
-            Texture* test_texture;
+            Material* test_material;
 
-            u8 current_texture = 1;
+            // u8 current_texture = 2;
     };
 
 };

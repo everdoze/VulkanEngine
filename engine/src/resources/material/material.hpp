@@ -24,13 +24,13 @@ namespace Engine {
 
     class TextureMap {
         public:
-            std::vector<Texture*> textures;
+            Texture* texture;
             TextureUse use;
     };
 
     class Material {
         public:
-            Material();
+            Material(MaterialCreateInfo& info);
             ~Material();
 
             std::string& GetName() { return name; };
@@ -39,6 +39,10 @@ namespace Engine {
             u32 GetGeneration() { return generation; };
             glm::vec4 GetDiffuseColor() { return diffuse_color; };
             TextureMap& GetDiffuseMap() { return diffuse_map; };
+
+            void SetInternalId(u32 id) { interanal_id = id; };
+            void SetGeneration(u32 gen) { generation = gen; };
+            void SetId(u32 id) { id = id; };
 
         protected:
             std::string name;
