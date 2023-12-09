@@ -57,6 +57,26 @@
         },
         {
             "type": "shell",
+            "label": "Build Everything Production",
+            "windows": {
+                "command": "${workspaceFolder}/build-all.prod.bat",
+            },
+            "linux": {
+                "command": "${workspaceFolder}/build-all.prod.sh",
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
             "label": "Clean Everything",
             "windows": {
                 "command": "${workspaceFolder}\\clean-all.bat",

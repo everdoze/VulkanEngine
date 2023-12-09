@@ -21,37 +21,6 @@ namespace Engine {
         return nullptr;
     };
 
-
-    b8 RendererFrontend::OnDebugEvent(EventType type, EventContext context) {
-        // const int names_count = 2;
-        // const char* names[names_count] = {
-        //     "cobblestone",
-        //     "paving"
-        // };
-
-        // TextureSystem* ts = TextureSystem::GetInstance();
-
-        // const char* old_name = current_texture < names_count ? names[current_texture] : nullptr;
-
-        // current_texture = (current_texture + 1) % 2;
-        
-        // u32 old_gen = 0;
-        // if (test_texture) {
-        //     old_gen = test_texture->GetGeneration();
-        // }
-
-        // test_texture = ts->AcquireTexture(names[current_texture], true);
-
-        // test_texture->SetGeneration(old_gen+1);
-
-        // if (old_name) {
-        //     ts->ReleaseTexture(old_name);
-        // }
-        
-        // return true;
-        return true;
-    };
-
     b8 RendererFrontend::Initialize(RendererSetup setup, RendererBackendType type) {
         instance = new RendererFrontend();
         instance->CreateBackend(setup, type);
@@ -70,11 +39,7 @@ namespace Engine {
     };
     
     void RendererFrontend::InitializeRenderer() {
-        EventSystem::GetInstance()->RegisterEvent(
-            EventType::Debug1,
-            "Renderer",
-            EventBind(OnDebugEvent)
-        );
+        
     };
 
     b8 RendererFrontend::CreateBackend(RendererSetup setup, RendererBackendType type) {
@@ -98,10 +63,6 @@ namespace Engine {
 
     void RendererFrontend::Shutdown() {
         if (instance) {
-            EventSystem::GetInstance()->UnregisterEvent(
-                EventType::Debug1,
-                "Renderer"
-            );
             instance->ShutdownBackend();
             delete instance;
         }
@@ -121,26 +82,20 @@ namespace Engine {
         }
     };
     
-    b8 RendererFrontend::DrawFrame(f32 delta_time) {
+    b8 RendererFrontend::DrawFrame(RenderPacket* packet) {
         RendererFrontend* instance = RendererFrontend::GetInstance();
 
-        if (instance->BeginFrame(delta_time)) {
+        if (instance->BeginFrame(packet->delta_time)) {
             
             instance->camera->OnUpdate();
 
             instance->backend->UpdateGlobalState(instance->camera->GetProjectionMatrix(), instance->camera->GetViewMatrix(), glm::vec3(), glm::vec4(1), 0);
             
-            if (!instance->test_material) {
-                instance->test_material = MaterialSystem::GetInstance()->AcquireMaterial("test");
+            for (u32 i = 0; i < packet->geometries.size(); ++i) {
+                instance->backend->DrawGeometry(packet->geometries[i]);
             }
 
-            GeometryRenderData data = {};
-            data.model = glm::mat4(1.0f);
-            data.object_id = 0;
-            data.material = instance->test_material;
-            instance->backend->UpdateObject(data);
-
-            b8 result = instance->EndFrame(delta_time);
+            b8 result = instance->EndFrame(packet->delta_time);
             if (!result) {
                 ERROR("RendererFrontend::EndFrame failed. Application shutting down...");
                 return false;
@@ -171,11 +126,11 @@ namespace Engine {
         return backend->UpdateGlobalState(projection, view, view_position, ambient_colour, mode);
     };
 
-    void RendererFrontend::UpdateObject(GeometryRenderData data) {
+    void RendererFrontend::DrawGeometry(GeometryRenderData data) {
         if (!backend) {
             return;
         }
-        return backend->UpdateObject(data);
+        return backend->DrawGeometry(data);
     };
 
     Texture* RendererFrontend::CreateTexture(TextureCreateInfo& info) {
@@ -192,6 +147,14 @@ namespace Engine {
         }
 
         return backend->CreateMaterial(info);
+    };
+    
+
+    Geometry* RendererFrontend::CreateGeometry(GeometryCreateInfo& info) {
+        if (!backend) {
+            return nullptr;
+        }
+        return backend->CreateGeometry(info);
     };
 
 };

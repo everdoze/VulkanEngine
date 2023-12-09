@@ -58,7 +58,10 @@ namespace Engine {
             void Use();
 
             void UpdateGlobalState();
-            void UpdateObject(GeometryRenderData data);
+            void UseModel(glm::mat4 model);
+            void UseMaterial(Material* material);
+
+            void DrawGeometry(GeometryRenderData data);
 
             b8 AcquireResources(Material* material);
             void ReleaseResources(u32 material_id);

@@ -2,10 +2,17 @@
 
 #include "defines.hpp"
 #include "renderer/renderer_types.inl"
+#include "resources/texture/texture.hpp"
 
 #define DEFAULT_TEXTURE_NAME "default_texture"
 
 namespace Engine {
+
+    struct TextureReference {
+        Texture* texture;
+        b8 auto_release;
+        u32 ref_count;
+    };
 
     class TextureSystem {
         public:

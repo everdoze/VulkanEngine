@@ -8,8 +8,7 @@
     "editor.fontFamily": "Consolas",
     "editor.fontSize": 14,
     "editor.fontWeight": "1",
-    "workbench.editor.showTabs": false,
-    "workbench.activityBar.visible": true,
+    "workbench.editor.showTabs": "single",
     "workbench.colorCustomizations": {
         "editorCursor.foreground": "#a8ff44",
         "editor.lineHighlightBackground": "#03240b"

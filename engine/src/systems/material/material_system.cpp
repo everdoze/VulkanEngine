@@ -15,12 +15,16 @@ namespace Engine {
     MaterialSystem* MaterialSystem::instance = nullptr;
 
     MaterialSystem::MaterialSystem() {
-        // std::string s;
-        // s.
+       CreateDefaultMaterial();
     };
 
     MaterialSystem::~MaterialSystem() {
         DestroyDefaultMaterial();
+
+        for (auto& [key, material] : registered_materials) { 
+            delete material;
+        } 
+
         registered_materials.clear();
     };
 
@@ -109,7 +113,9 @@ namespace Engine {
     };
 
     void MaterialSystem::ReleaseMaterial(std::string name) {
-
+        if (registered_materials[name]) {
+            delete registered_materials[name];
+        }
     };
 
     b8 MaterialSystem::LoadMaterialConfig(std::string file_path, MaterialConfig* out_config) {

@@ -9,6 +9,7 @@
 #include "resources/texture/texture.hpp"
 #include "shaders/material_shader.hpp"
 #include "vulkan_texture.hpp"
+#include "vulkan_geometry.hpp"
 
 #include <vulkan/vulkan.h>
 
@@ -39,6 +40,10 @@ namespace Engine {
 
             Material* CreateMaterial(MaterialCreateInfo& info);
 
+            Geometry* CreateGeometry(GeometryCreateInfo& info);
+            // b8 ReuploadGeometry(VulkanGeometry* geometry);
+            b8 DestroyGeometry(VulkanGeometry* geometry);
+
             void DrawGeometry();
 
             void SetImageIndex(u32 index) { image_index = index; };
@@ -55,7 +60,7 @@ namespace Engine {
             b8 BeginFrame(f32 delta_time);
             b8 EndFrame(f32 delta_time);
             b8 UpdateGlobalState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_colour, i32 mode);
-            void UpdateObject(GeometryRenderData data);
+            void DrawGeometry(GeometryRenderData data);
 
             b8 SwapchainCreate(u16 width, u16 height);
             b8 SwapchainRecreate(u16 width, u16 height);
@@ -73,7 +78,8 @@ namespace Engine {
             b8 RenderpassCreate();
 
             void UploadDataRange(VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, u64 offset, u64 size, void* data);
-
+            void FreeDataRange(VulkanBuffer* buffer, u64 offset, u64 size);
+            void FreeGeometry(VulkanGeometry* geometry);
         private:
             // Adding debugger only for debug mode
             #if defined(_DEBUG)
@@ -109,6 +115,11 @@ namespace Engine {
             VkSurfaceKHR surface;
             VkInstance vulkan_instance;
             VkAllocationCallbacks* allocator = nullptr;
+
+            std::vector<VulkanGeometry*> geometries;
+
+            u32 vertex_buffer_offset = 0;
+            u32 index_buffer_offset = 0;
 
             u32 obj_id;
     };
