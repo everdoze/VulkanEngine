@@ -28,6 +28,7 @@ namespace Engine {
 
     void GeometrySystem::Shutdown() {
         if (instance) {
+            DEBUG("Shutting down GeometrySystem");
             delete instance;
         }
     };

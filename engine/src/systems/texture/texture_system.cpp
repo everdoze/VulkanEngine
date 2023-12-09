@@ -34,7 +34,10 @@ namespace Engine {
     };
 
     void TextureSystem::Shutdown() {
-        delete instance;
+        if (instance) {
+            DEBUG("Shutting down TextureSystem");
+            delete instance;
+        }
     };
 
     TextureSystem* TextureSystem::GetInstance() {

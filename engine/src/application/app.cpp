@@ -50,32 +50,32 @@ namespace Engine {
     };
 
     b8 Application::OnDebugEvent(EventType type, EventContext& context) {
-        // const int names_count = 2;
-        // const char* names[names_count] = {
-        //     "cobblestone",
-        //     "paving"
-        // };
+        const int names_count = 2;
+        const char* names[names_count] = {
+            "cobblestone",
+            "paving"
+        };
 
-        // TextureSystem* ts = TextureSystem::GetInstance();
+        TextureSystem* ts = TextureSystem::GetInstance();
+        Texture* texture = test_geometry->GetMaterial()->GetDiffuseMap().texture;
 
-        // const char* old_name = current_texture < names_count ? names[current_texture] : nullptr;
+        const char* old_name = current_texture < names_count ? names[current_texture] : nullptr;
 
-        // current_texture = (current_texture + 1) % 2;
+        current_texture = (current_texture + 1) % 2;
         
-        // u32 old_gen = 0;
-        // if (test_texture) {
-        //     old_gen = test_texture->GetGeneration();
-        // }
+        u32 old_gen = 0;
+        if (texture) {
+            old_gen = texture->GetGeneration();
+        }
 
-        // test_texture = ts->AcquireTexture(names[current_texture], true);
+        texture = ts->AcquireTexture(names[current_texture], true);
 
-        // test_texture->SetGeneration(old_gen+1);
-
-        // if (old_name) {
-        //     ts->ReleaseTexture(old_name);
-        // }
+        texture->SetGeneration(old_gen+1);
+        test_geometry->GetMaterial()->GetDiffuseMap().texture = texture;
+        if (old_name) {
+            ts->ReleaseTexture(old_name);
+        }
         
-        // return true;
         return true;
     };
 
@@ -228,6 +228,7 @@ namespace Engine {
         EventSystem::GetInstance()->UnregisterEvent(EventType::Debug1, "Application");
         //////////////////////////////////
 
+        GeometrySystem::Shutdown();
         TextureSystem::Shutdown();
         RendererFrontend::Shutdown();
         EventSystem::Shutdown();

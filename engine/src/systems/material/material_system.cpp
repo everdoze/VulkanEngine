@@ -53,6 +53,7 @@ namespace Engine {
 
     void MaterialSystem::Shutdown() {
         if (instance) {
+            DEBUG("Shutting down MaterialSystem");
             delete instance;
         }
     };
