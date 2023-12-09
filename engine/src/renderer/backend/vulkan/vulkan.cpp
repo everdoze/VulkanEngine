@@ -22,6 +22,10 @@ namespace Engine {
         staging.CopyTo(pool, fence, queue, 0, buffer->handle, offset, size);
     }
 
+    void VulkanRendererBackend::FreeDataRange(VulkanBuffer* buffer, u64 offset, u64 size) {
+        return;
+    };
+
     VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback (
         VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
         VkDebugUtilsMessageTypeFlagsEXT message_type,
@@ -199,47 +203,6 @@ namespace Engine {
         // Buffers
         DEBUG("Creating buffers...");
         CreateBuffers();
-
-        // TODO: temporary test code
-        const u32 vert_count = 4;
-        Vertex3D verts[vert_count];
-        Platform::ZMemory(verts, sizeof(Vertex3D) * vert_count);
-
-        const f32 f = 10.0f;
-
-        verts[0].position.x = -0.5 * f;
-        verts[0].position.y = -0.5 * f;
-        verts[0].texcoord.x = 0.0f;
-        verts[0].texcoord.y = 0.0f;
-
-        verts[1].position.y = 0.5 * f;
-        verts[1].position.x = 0.5 * f;
-        verts[1].texcoord.x = 1.0f;
-        verts[1].texcoord.y = 1.0f;
-
-        verts[2].position.x = -0.5 * f;
-        verts[2].position.y = 0.5 * f;
-        verts[2].texcoord.x = 0.0f;
-        verts[2].texcoord.y = 1.0f;
-
-        verts[3].position.x = 0.5 * f;
-        verts[3].position.y = -0.5 * f;
-        verts[3].texcoord.x = 1.0f;
-        verts[3].texcoord.y = 0.0f;
-
-        const u32 index_count = 6;
-        u32 indices[index_count] = {0, 1, 2, 0, 3, 1};
-
-        UploadDataRange(device->graphics_command_pool, 0, device->graphics_queue, object_vertex_buffer, 0, sizeof(Vertex3D) * vert_count, verts);
-        UploadDataRange(device->graphics_command_pool, 0, device->graphics_queue, object_index_buffer, 0, sizeof(u32) * index_count, indices);
-
-        // obj_id = 0;
-        // if (!this->default_shader->AcquireResources(&obj_id)) {
-        //     ERROR("Unable to acquire shader resources.");
-        //     return false;
-        // }
-
-        // TODO: end temp code
 
         return true;
     };
@@ -651,8 +614,6 @@ namespace Engine {
 
 
     b8 VulkanRendererBackend::UpdateGlobalState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_colour, i32 mode) {
-        // VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
-
         default_shader->global_ubo.projection = projection;
         default_shader->global_ubo.view = view;
 
@@ -661,24 +622,31 @@ namespace Engine {
         return true;
     };  
 
-    void VulkanRendererBackend::UpdateObject(GeometryRenderData data) {
+    void VulkanRendererBackend::DrawGeometry(GeometryRenderData data) {
+        if (!data.geometry || data.geometry->GetInternalId() == INVALID_ID) {
+            return;
+        }
+        VulkanGeometry* geometry = static_cast<VulkanGeometry*>(data.geometry);
         VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
 
-        default_shader->UpdateObject(data);
-
-        // TODO: temporary test code
         default_shader->Use();
 
-        // Bind vertex buffer at offset.
-        VkDeviceSize offsets[1] = {0};
+        default_shader->UseModel(data.model);
+
+        default_shader->UseMaterial(data.geometry->GetMaterial());
+
+        VkDeviceSize offsets[1] = {geometry->GetVertexBufferOffset()};
         vkCmdBindVertexBuffers(command_buffer->handle, 0, 1, &object_vertex_buffer->handle, (VkDeviceSize*)offsets);
 
-        // Bind index buffer at offset.
-        vkCmdBindIndexBuffer(command_buffer->handle, object_index_buffer->handle, 0, VK_INDEX_TYPE_UINT32);
+        if (geometry->GetIndexCount()) {
+            // Bind index buffer at offset.
+            vkCmdBindIndexBuffer(command_buffer->handle, object_index_buffer->handle, geometry->GetIndexBufferOffset(), VK_INDEX_TYPE_UINT32);
 
-        // Issue the draw.
-        vkCmdDrawIndexed(command_buffer->handle, 6, 1, 0, 0, 0);
-        // TODO: end temporary test code
+            // Issue the draw.
+            vkCmdDrawIndexed(command_buffer->handle, geometry->GetIndexCount(), 1, 0, 0, 0);
+        } else {
+            vkCmdDraw(command_buffer->handle, geometry->GetVertexCount(), 1, 0, 0);
+        }
     };
 
     Texture* VulkanRendererBackend::CreateTexture(TextureCreateInfo& info) {
@@ -697,4 +665,55 @@ namespace Engine {
         return material;
     };
 
-};
+    Geometry* VulkanRendererBackend::CreateGeometry(GeometryCreateInfo& info) {
+        if (!info.vertices.size()) {
+            ERROR("No vertex data was supplied to VulkanRendererBackend::CreateGeometry.");
+            return nullptr;
+        } 
+        
+        VulkanGeometryCreateInfo create_info = {};
+        create_info.vertex_buffer_offset = vertex_buffer_offset;
+        create_info.vertex_count = info.vertices.size();
+        create_info.vertex_size = sizeof(Vertex3D) * info.vertices.size();
+
+        create_info.index_buffer_offset = index_buffer_offset;
+        create_info.index_count = info.indices.size();
+        create_info.index_size = sizeof(u32) * info.indices.size();
+        
+
+        VulkanGeometry* g = new VulkanGeometry(info, create_info);
+
+        UploadDataRange(
+            device->graphics_command_pool, 
+            0, device->graphics_queue, 
+            object_vertex_buffer, g->GetVertexBufferOffset(), 
+            g->GetVertexSize(), info.vertices.data());
+
+        vertex_buffer_offset += g->GetVertexSize();
+
+        if (info.indices.size()) {
+            UploadDataRange(
+                device->graphics_command_pool, 
+                0, device->graphics_queue, 
+                object_index_buffer, g->GetIndexBufferOffset(), 
+                g->GetIndexSize(), info.indices.data());
+        }
+
+        g->UpdateGeneration();
+
+        return g;
+    };
+
+    b8 VulkanRendererBackend::DestroyGeometry(VulkanGeometry* geometry) {
+        
+    };
+
+    void VulkanRendererBackend::FreeGeometry(VulkanGeometry* geometry) {
+        vkDeviceWaitIdle(device->logical_device);
+        FreeDataRange(object_vertex_buffer, geometry->GetVertexBufferOffset(), geometry->GetVertexSize());
+        if (geometry->GetIndexSize()) {
+            FreeDataRange(object_index_buffer, geometry->GetIndexBufferOffset(), geometry->GetVertexSize());
+        }
+    };
+
+};  

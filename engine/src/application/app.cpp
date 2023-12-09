@@ -6,6 +6,7 @@
 
 #include "systems/texture/texture_system.hpp"
 #include "systems/material/material_system.hpp"
+#include "systems/geometry/geometry_system.hpp"
 
 #include "platform/filesystem.hpp"
 
@@ -39,8 +40,45 @@ namespace Engine {
             EventBind(onResize)
         );
 
+        event->RegisterEvent(
+            EventType::Debug1,
+            "Application",
+            EventBind(OnDebugEvent)
+        );
+
         return true;
     };
+
+    b8 Application::OnDebugEvent(EventType type, EventContext& context) {
+        // const int names_count = 2;
+        // const char* names[names_count] = {
+        //     "cobblestone",
+        //     "paving"
+        // };
+
+        // TextureSystem* ts = TextureSystem::GetInstance();
+
+        // const char* old_name = current_texture < names_count ? names[current_texture] : nullptr;
+
+        // current_texture = (current_texture + 1) % 2;
+        
+        // u32 old_gen = 0;
+        // if (test_texture) {
+        //     old_gen = test_texture->GetGeneration();
+        // }
+
+        // test_texture = ts->AcquireTexture(names[current_texture], true);
+
+        // test_texture->SetGeneration(old_gen+1);
+
+        // if (old_name) {
+        //     ts->ReleaseTexture(old_name);
+        // }
+        
+        // return true;
+        return true;
+    };
+
 
     Camera* Application::GetCamera() {
         return RendererFrontend::GetInstance()->GetCamera();
@@ -94,7 +132,14 @@ namespace Engine {
             return;
         }
 
-        MaterialSystem::GetInstance()->AcquireMaterial("test");
+        if (!GeometrySystem::Initialize()) {
+            SetReady(false);
+            FATAL("Error during GeometrySystem initialization.")
+        }
+        
+        // TODO: temp
+        test_geometry = GeometrySystem::GetInstance()->GetDefaultGeometry();
+        // TODO: temp
 
         SetReady(true);
         DEBUG("Application successfully initialized.");
@@ -131,7 +176,16 @@ namespace Engine {
 
                 GameUpdate(delta);
 
-                RendererFrontend::DrawFrame(delta);
+                RenderPacket packet;
+                packet.delta_time = delta;
+
+                GeometryRenderData test_render;
+                test_render.geometry = test_geometry;
+                test_render.model = glm::identity<glm::mat4>();
+                
+                packet.geometries.push_back(test_render);
+
+                RendererFrontend::DrawFrame(&packet);
 
                 f64 frame_end_time = Platform::GetAbsoluteTime();
                 f64 frame_elapsed_time = frame_end_time - frame_start_time;
@@ -171,6 +225,7 @@ namespace Engine {
         EventSystem::GetInstance()->UnregisterEvent(EventType::KeyPressed, "Application");
         EventSystem::GetInstance()->UnregisterEvent(EventType::KeyReleased, "Application");
         EventSystem::GetInstance()->UnregisterEvent(EventType::WindowResize, "Application");
+        EventSystem::GetInstance()->UnregisterEvent(EventType::Debug1, "Application");
         //////////////////////////////////
 
         TextureSystem::Shutdown();

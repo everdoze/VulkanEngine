@@ -19,6 +19,7 @@ namespace Engine {
             void ReleaseMaterial(std::string name);
 
             Material* LoadMaterial(MaterialConfig& config);
+            Material* GetDefaultMaterial() {return default_material; };
 
             void CreateDefaultMaterial();
             void DestroyDefaultMaterial();

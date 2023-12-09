@@ -8,6 +8,10 @@
 
 int main(int argc, char** argv);
 
+// TODO: temp
+#include "resources/geometry/geometry.hpp"
+// TODO: temp
+
 namespace Engine {
 
     struct ApplicationSetup {
@@ -60,6 +64,8 @@ namespace Engine {
             b8 onExit(EventType type, EventContext& context);
             b8 onKey(EventType type, EventContext& context);
             b8 onResize(EventType type, EventContext& context);
+            b8 OnDebugEvent(EventType type, EventContext& context);
+
 
         private:
             b8 running = false;
@@ -68,6 +74,7 @@ namespace Engine {
 
             Clock clock;
 
+            Geometry* test_geometry;
             
             f64 last_time;
 

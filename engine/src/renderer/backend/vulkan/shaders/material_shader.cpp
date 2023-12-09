@@ -351,15 +351,21 @@ namespace Engine {
 
     };
 
-    void VulkanShader::UpdateObject(GeometryRenderData data) {
+    void VulkanShader::UseModel(glm::mat4 model) {
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         u32 image_index = backend->GetImageIndex();
         VkCommandBuffer command_buffer = backend->GetGraphicsCommandBufers()[image_index]->handle;
 
-        vkCmdPushConstants(command_buffer, this->pipeline->pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &data.model);
+        vkCmdPushConstants(command_buffer, this->pipeline->pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &model);
+    };
+
+    void VulkanShader::UseMaterial(Material* material) {
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        u32 image_index = backend->GetImageIndex();
+        VkCommandBuffer command_buffer = backend->GetGraphicsCommandBufers()[image_index]->handle;
 
         // Get material state
-        VulkanMaterialShaderInstanceState* material_state = &instance_states[data.object_id];
+        VulkanMaterialShaderInstanceState* material_state = &instance_states[material->GetInternalId()];
         VkDescriptorSet material_descriptor_set = material_state->descriptor_sets[image_index];
 
         // TODO: if needs update
@@ -370,7 +376,7 @@ namespace Engine {
 
         // Descriptor 0 - Uniform buffer
         u32 range = sizeof(MaterialUniformObject);
-        u64 offset = sizeof(MaterialUniformObject) * data.object_id;
+        u64 offset = sizeof(MaterialUniformObject) * material->GetInternalId();
         MaterialUniformObject mbo;
 
         accumulator += backend->GetDeltaTime();
@@ -403,7 +409,6 @@ namespace Engine {
         const u32 sampler_count = 1;
         VkDescriptorImageInfo image_infos[sampler_count];
         for (u32 i = 0; i < sampler_count; ++i) {
-            Material* material = data.material;
             VulkanTexture* t = static_cast<VulkanTexture*>(material->GetDiffuseMap().texture);
             u32* descriptor_generation = &material_state->descriptor_states[descriptor_index].generations[image_index];
 
@@ -494,6 +499,8 @@ namespace Engine {
         VulkanMaterialShaderInstanceState* instance_state = &instance_states[material_id];
 
         const u32 descriptor_set_count = 3;
+
+        vkDeviceWaitIdle(backend->GetVulkanDevice()->logical_device);
 
         VkResult result = vkFreeDescriptorSets(
             backend->GetVulkanDevice()->logical_device,
