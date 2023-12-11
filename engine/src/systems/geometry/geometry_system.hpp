@@ -5,7 +5,7 @@
 
 namespace Engine
 {
-
+    // TODO: AUTO_RELEASE usage
     class GeometrySystem {
         public:
             GeometrySystem();
