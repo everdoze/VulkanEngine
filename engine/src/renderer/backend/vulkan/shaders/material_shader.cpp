@@ -8,6 +8,7 @@
 #include "../vulkan.hpp"
 #include "../vulkan_texture.hpp"
 #include "systems/texture/texture_system.hpp"
+#include "systems/resource/resource_system.hpp"
 
 namespace Engine {
 
@@ -203,7 +204,7 @@ namespace Engine {
             this->global_descriptor_sets));
 
         this->material_uniform_buffer = new VulkanBuffer(
-            sizeof(MaterialUniformObject), 
+            sizeof(MaterialUniformObject) * VULKAN_MATERIAL_MAX_OBJECT_COUNT, 
             (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT),
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
             true); 
@@ -270,27 +271,26 @@ namespace Engine {
         VulkanShaderStage* out_shader_stage) {
         
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
-        
-        std::string file_name = StringFormat("assets/shaders/%s.%s.spv", name.c_str(), type.c_str());
 
         Platform::ZMemory(&out_shader_stage->create_info, sizeof(VkShaderModuleCreateInfo));
 
-        File* file = FileSystem::FileOpen(file_name, FileMode::READ, true);
+        std::string shader_name = StringFormat("%s.%s.spv", name.c_str(), type.c_str());
+        BinaryResource* b_resource = static_cast<BinaryResource*>(
+            ResourceSystem::GetInstance()->LoadResource(ResourceType::BINARY, shader_name)
+        );
 
-        if (!file->IsReady()) {
-            ERROR("Unable to read shader module: %s.", file_name.c_str());
+        if (!b_resource) {
+            ERROR("Unable to read shader module: %s.", shader_name.c_str());
             return false;
         }
 
-        std::vector<c8> bytes = file->ReadAllBytes();
+        std::vector<c8> bytes = b_resource->GetData();
 
         if (bytes.size() == 0) {
-            ERROR("Unable to binary read shader module: %s.", file_name.c_str());
+            ERROR("Unable to binary read shader module: %s.", shader_name.c_str());
             return false;
         }
-
-        FileSystem::FileClose(file);
-
+        
         out_shader_stage->create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         out_shader_stage->create_info.codeSize = bytes.size();
         out_shader_stage->create_info.pCode = (u32*)bytes.data();
@@ -300,6 +300,8 @@ namespace Engine {
             &out_shader_stage->create_info,
             backend->GetVulkanAllocator(),
             &out_shader_stage->handle));
+
+        delete b_resource;
 
         Platform::ZMemory(&out_shader_stage->shader_stage_create_info, sizeof(VkPipelineShaderStageCreateInfo));
         out_shader_stage->shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

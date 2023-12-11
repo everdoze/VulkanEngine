@@ -7,6 +7,7 @@
 #include "systems/texture/texture_system.hpp"
 #include "systems/material/material_system.hpp"
 #include "systems/geometry/geometry_system.hpp"
+#include "systems/resource/resource_system.hpp"
 
 #include "platform/filesystem.hpp"
 
@@ -109,6 +110,12 @@ namespace Engine {
             FATAL("Error during Platform initialization.");
             return;
         }
+
+        if (!ResourceSystem::Initialize("../assets")) {
+            SetReady(false);
+            FATAL("Error during ResourceSystem initialization.");
+            return;
+        }
         
         RendererSetup renderer_setup;
         renderer_setup.height = setup.height;
@@ -138,7 +145,10 @@ namespace Engine {
         }
         
         // TODO: temp
-        test_geometry = GeometrySystem::GetInstance()->GetDefaultGeometry();
+        GeometrySystem* gs = GeometrySystem::GetInstance();
+        GeometryConfig g_config = gs->GeneratePlainConfig(10.0f, 10.0f, 5, 5, 20.0f, 20.0f, "test_geometry", "test");
+        test_geometry = gs->AcquireGeometryFromConfig(g_config, true);
+        // test_geometry = GeometrySystem::GetInstance()->GetDefaultGeometry();
         // TODO: temp
 
         SetReady(true);
@@ -232,6 +242,7 @@ namespace Engine {
         TextureSystem::Shutdown();
         RendererFrontend::Shutdown();
         EventSystem::Shutdown();
+        ResourceSystem::Shutdown();
         Platform::Shutdown();
         Logger::Shutdown();
     };

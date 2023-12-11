@@ -46,12 +46,12 @@ namespace Engine
             void SetGeneration(u32 gen) { generation = gen; };
             void SetId(u32 id) { id = id; };
 
-            protected:
-                std::string name;
-                u32 id;
-                u32 generation;
-                u32 interanal_id;
-                Material* material;
+        protected:
+            std::string name;
+            u32 id;
+            u32 generation;
+            u32 interanal_id;
+            Material* material;
     };
 
 };

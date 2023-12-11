@@ -4,9 +4,7 @@
 #include "core/logger/logger.hpp"
 #include "platform/platform.hpp"
 
-// TODO: Resource loader
-#define STB_IMAGE_IMPLEMENTATION
-#include "vendor/stb_image/stb_image.h"
+#include "systems/resource/resource_system.hpp"
 
 namespace Engine {
     
@@ -129,57 +127,26 @@ namespace Engine {
     };
 
     Texture* TextureSystem::LoadTexture(std::string texture_name) {
-        std::string file_path = StringFormat("assets/textures/%s.%s", texture_name.c_str(), "png");
-        stbi_set_flip_vertically_on_load(true);
+        ResourceSystem* rs = ResourceSystem::GetInstance();
 
-        const u8 required_channel_count = 4;
-
-        i32 width;
-        i32 height;
-        i32 channel_count;
-        b8 has_transparency = false;
-        u8* data = stbi_load(
-            file_path.c_str(),
-            &width, &height,
-            &channel_count,
-            required_channel_count);
-
+        ImageResource* image = static_cast<ImageResource*>(rs->LoadResource(ResourceType::IMAGE, texture_name));
 
         Texture* texture = nullptr;
 
-        if (data) {
-            u64 total_size = width * height * required_channel_count;
-            for (u64 i = 0; i < total_size; i += required_channel_count) {
-                u8 alpha = data[i + 3];
-                if (alpha < 255) {
-                    has_transparency = true;
-                    break;
-                }
-            }
-
-            if (stbi_failure_reason()) {
-                WARN("RendererFrontend::LoadTexture failed to load file '%s' : %s", file_path.c_str(), stbi_failure_reason());
-                stbi__err(0, 0);
-            }
-
+        if (image->GetPixels()) {
             TextureCreateInfo create_info;
             create_info.name = texture_name;
-            create_info.width = width;
-            create_info.height = height;
-            create_info.channel_count = required_channel_count;
-            create_info.has_transparency = has_transparency;
-            create_info.pixels = data;
+            create_info.width = image->GetWidth();
+            create_info.height = image->GetHeight();
+            create_info.channel_count = image->GetChannelCount();
+            create_info.has_transparency = image->HasTransparency();
+            create_info.pixels = image->GetPixels();
             texture = RendererFrontend::GetInstance()->CreateTexture(create_info);
 
             texture->UpdateGeneration();
-
-            stbi_image_free(data);
-        } else {
-            if (stbi_failure_reason()) {
-                WARN("RendererFrontend::LoadTexture failed to load file '%s' : %s", file_path.c_str(), stbi_failure_reason());
-                stbi__err(0, 0);
-            }
         }
+
+        delete image;
 
         return texture;
     };

@@ -7,7 +7,7 @@
 #define DEFAULT_TEXTURE_NAME "default_texture"
 
 namespace Engine {
-
+    // TODO: AUTO_RELEASE usage
     struct TextureReference {
         Texture* texture;
         b8 auto_release;

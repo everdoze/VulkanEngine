@@ -5,7 +5,7 @@
 #include "resources/material/material.hpp"
 
 namespace Engine {
-
+    // TODO: AUTO_RELEASE usage
     class MaterialSystem {
         public:
             MaterialSystem();
@@ -25,7 +25,6 @@ namespace Engine {
             void DestroyDefaultMaterial();
 
             Material* AcquireMaterialFromConfig(MaterialConfig& config);
-            b8 LoadMaterialConfig(std::string file_path, MaterialConfig* out_config);
 
         private:
             static MaterialSystem* instance;
