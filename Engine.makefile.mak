@@ -44,6 +44,7 @@ clean: # clean build directory
 	if exist $(BUILD_DIR)\$(ASSEMBLY).exp del $(BUILD_DIR)\$(ASSEMBLY).exp /s /q
 	if exist $(BUILD_DIR)\$(ASSEMBLY).a del $(BUILD_DIR)\$(ASSEMBLY).a /s /q
 	if exist $(OBJ_DIR)\$(ASSEMBLY) rmdir /s /q $(OBJ_DIR)\$(ASSEMBLY)
+	if exist $(BUILD_DIR)\log.txt del $(BUILD_DIR)\log.txt /s /q
 
 $(OBJ_DIR)/%.cpp.o: %.cpp # compile .c to .c.o object
 	@echo   $<...

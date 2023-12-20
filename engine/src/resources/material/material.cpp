@@ -4,6 +4,7 @@ namespace Engine {
 
     Material::Material(MaterialCreateInfo& info) {
         name = info.name;
+        type = info.type;
         id = INVALID_ID;
         generation = INVALID_ID;
         interanal_id = INVALID_ID;

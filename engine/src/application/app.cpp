@@ -148,6 +148,50 @@ namespace Engine {
         GeometrySystem* gs = GeometrySystem::GetInstance();
         GeometryConfig g_config = gs->GeneratePlainConfig(10.0f, 10.0f, 5, 5, 20.0f, 20.0f, "test_geometry", "test");
         test_geometry = gs->AcquireGeometryFromConfig(g_config, true);
+
+        Platform::FMemory(g_config.indices); 
+        Platform::FMemory(g_config.vertices); 
+
+        // Load up some test UI geometry.
+        GeometryConfig ui_config;
+        ui_config.vertex_size = sizeof(Vertex2D);
+        ui_config.vertex_count = 4;
+        ui_config.index_size = sizeof(u32);
+        ui_config.index_count = 6;
+        ui_config.material_name = "test_ui";
+        ui_config.name = "test_ui_geometry";
+
+        const f32 f = 256.0f;
+        std::vector<Vertex2D> uiverts(4);
+        uiverts[0].position.x = 0.0f;  // 0    3
+        uiverts[0].position.y = 0.0f;  //
+        uiverts[0].texcoord.x = 0.0f;  //
+        uiverts[0].texcoord.y = 0.0f;  // 2    1
+
+        uiverts[1].position.y = f;
+        uiverts[1].position.x = f;
+        uiverts[1].texcoord.x = 1.0f;
+        uiverts[1].texcoord.y = 1.0f;
+
+        uiverts[2].position.x = 0.0f;
+        uiverts[2].position.y = f;
+        uiverts[2].texcoord.x = 0.0f;
+        uiverts[2].texcoord.y = 1.0f;
+
+        uiverts[3].position.x = f;
+        uiverts[3].position.y = 0.0;
+        uiverts[3].texcoord.x = 1.0f;
+        uiverts[3].texcoord.y = 0.0f;
+        ui_config.vertices = uiverts.data();
+
+        // Indices - counter-clockwise
+        u32 uiindices[6] = {2, 1, 0, 3, 0, 1};
+        ui_config.indices = uiindices;
+
+        // Get UI geometry from config.
+        test_ui_geometry = gs->AcquireGeometryFromConfig(ui_config, true);
+
+
         // test_geometry = GeometrySystem::GetInstance()->GetDefaultGeometry();
         // TODO: temp
 
@@ -194,6 +238,12 @@ namespace Engine {
                 test_render.model = glm::identity<glm::mat4>();
                 
                 packet.geometries.push_back(test_render);
+
+                GeometryRenderData test_ui_render;
+                test_ui_render.geometry = test_ui_geometry;
+                test_ui_render.model = glm::identity<glm::mat4>();
+
+                packet.ui_geometries.push_back(test_ui_render);
 
                 RendererFrontend::DrawFrame(&packet);
 

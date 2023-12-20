@@ -20,12 +20,12 @@ namespace Engine
 
             u32 GetNewGeometryId();
 
-            Geometry* GetDefaultGeometry();
+            Geometry* GetDefaultGeometry(GeometryType type);
 
             Geometry* LoadGeometry(GeometryConfig& config);
 
-            void CreateDefaultGeometry();
-            void DestroyDefaultGeometry();
+            void CreateDefaultGeometries();
+            void DestroyDefaultGeometries();
 
             GeometryConfig GeneratePlainConfig(
                 f32 width, f32 height, 
@@ -39,6 +39,7 @@ namespace Engine
             static GeometrySystem* instance;
 
             Geometry* default_geometry;
+            Geometry* default_ui_geometry;
             std::vector<Geometry*> registered_geometries;
     };
 } 

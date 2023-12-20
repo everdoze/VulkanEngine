@@ -4,7 +4,7 @@
 #include "renderpass.hpp"
 #include "platform/platform.hpp"
 
-#include "vulkan_helpers.hpp"
+#include "helpers.hpp"
 #include "core/logger/logger.hpp"
 
 namespace Engine {
@@ -15,8 +15,6 @@ namespace Engine {
         u32 height,
         u32 attachment_count,
         VkImageView* attachments) {
-        
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         this->renderpass = renderpass;
 
@@ -26,6 +24,11 @@ namespace Engine {
         }
         this->attachment_count = attachment_count;
 
+        VulkanCreate(width, height);
+    };
+
+    void VulkanFramebuffer::VulkanCreate(u32 width, u32 height) {
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         VkFramebufferCreateInfo fb_create_info = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
         fb_create_info.renderPass = renderpass->handle;
         fb_create_info.attachmentCount = attachment_count;
@@ -39,8 +42,11 @@ namespace Engine {
             &fb_create_info,
             backend->GetVulkanAllocator(),
             &this->handle));
-            
     };
+
+    void VulkanFramebuffer::Regenerate(u32 width, u32 height) {
+        VulkanCreate(width, height);
+    }
 
     VulkanFramebuffer::~VulkanFramebuffer() {
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());

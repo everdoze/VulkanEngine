@@ -19,10 +19,10 @@ namespace Engine {
             void ReleaseMaterial(std::string name);
 
             Material* LoadMaterial(MaterialConfig& config);
-            Material* GetDefaultMaterial() {return default_material; };
+            Material* GetDefaultMaterial(MaterialType type) {return default_material; };
 
-            void CreateDefaultMaterial();
-            void DestroyDefaultMaterial();
+            void CreateDefaultMaterials();
+            void DestroyDefaultMaterials();
 
             Material* AcquireMaterialFromConfig(MaterialConfig& config);
 
@@ -30,6 +30,7 @@ namespace Engine {
             static MaterialSystem* instance;
 
             Material* default_material;
+            Material* default_ui_material;
             std::unordered_map<std::string, Material*> registered_materials;
     };
 

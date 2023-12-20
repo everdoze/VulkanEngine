@@ -9,16 +9,30 @@ namespace Engine
     
     #define DEFAULT_GEOMETRY_NAME "default_geometry"
 
+    enum class GeometryType {
+        GEOMETRY_2D,
+        GEOMETRY_3D
+    };
+
     struct GeometryConfig {
-        std::vector<Vertex3D> vertices;
-        std::vector<u32> indices;
+        u32 vertex_size;
+        u32 vertex_count;
+        void* vertices;
+        GeometryType type;
+        u32 index_size;
+        u32 index_count;
+        void* indices;
         std::string name;
         std::string material_name;
     };
 
     struct GeometryCreateInfo {
-        std::vector<Vertex3D> vertices;
-        std::vector<u32> indices;
+        u32 vertex_count;
+        u32 vertex_element_size;
+        void* vertices;
+        u32 index_count;
+        u32 index_element_size;
+        void* indices;
         std::string name;
         Material* material;
         u32 id;
@@ -27,7 +41,7 @@ namespace Engine
     class Geometry {
         public:
             Geometry(GeometryCreateInfo& info);
-            ~Geometry();
+            virtual ~Geometry();
 
             std::string& GetName() { return name; };
             u32 GetId() { return id; };

@@ -4,7 +4,7 @@ OBJ_DIR := obj
 
 ASSEMBLY := engine
 EXTENSION := .dll
-COMPILER_FLAGS := -std=c++17 -g -Werror=vla -Wformat-security
+COMPILER_FLAGS := -std=c++17 -g -Werror=vla -Wformat-security 
 INCLUDE_FLAGS := -Iengine\src -I$(VULKAN_SDK)\include -Iengine\src\vendor
 LINKER_FLAGS := -g -shared -luser32 -lvulkan-1 -L$(VULKAN_SDK)\Lib -L$(OBJ_DIR)\engine
 DEFINES := -DAPI_EXPORT -D_CRT_SECURE_NO_WARNINGS

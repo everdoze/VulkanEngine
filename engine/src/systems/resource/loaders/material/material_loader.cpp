@@ -23,6 +23,7 @@ namespace Engine {
         }
 
         std::string material_name;
+        MaterialType type = MaterialType::WORLD;
         b8 auto_release = false;
         glm::vec4 diffuse_color;
         std::string diffuse_map_name;
@@ -47,13 +48,18 @@ namespace Engine {
                 }
             } else if (pair.first == "diffuse_map_name") {
                 diffuse_map_name = pair.second;
+            } else if (pair.first == "type") {
+                if (pair.second == "ui") {
+                    type = MaterialType::UI;
+                } else if (pair.second == "world") {
+                    type = MaterialType::WORLD;
+                }
             }
-
         };
 
         FileSystem::FileClose(file);
 
-        return new MaterialResource(id, name, file_path, material_name, auto_release, diffuse_color, diffuse_map_name);
+        return new MaterialResource(id, name, type, file_path, material_name, auto_release, diffuse_color, diffuse_map_name);
     };
 
 }

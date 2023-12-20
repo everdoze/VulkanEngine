@@ -18,7 +18,8 @@ namespace Engine {
 
             VulkanImage* depth_attachment;
 
-            std::vector<VulkanFramebuffer*> framebuffers;
+            std::vector<VulkanFramebuffer*> ui_framebuffers;
+            std::vector<VulkanFramebuffer*> world_framebuffers;
 
             b8 ready;
 
@@ -35,9 +36,15 @@ namespace Engine {
                 u32 present_image_index
             );
 
-            void GenerateFramebuffers(
+            void GenerateUIFramebuffers(
                 class VulkanRenderpass* renderpass
             );
+
+            void GenerateWorldFramebuffers(
+                class VulkanRenderpass* renderpass
+            );
+
+            void RegenerateFramebuffers(u32 width, u32 height);
 
             void DestroyFramebuffers();
 

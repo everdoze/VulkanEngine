@@ -2,14 +2,14 @@
 
 #include "vulkan.hpp"
 #include "core/logger/logger.hpp"
-#include "vulkan_helpers.hpp"
+#include "helpers.hpp"
 #include "platform/platform.hpp"
 
 namespace Engine {
 
-    Device::Device() {};
+    VulkanDevice::VulkanDevice() {};
 
-    Device::~Device() {
+    VulkanDevice::~VulkanDevice() {
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         // Unset queues
         transfer_queue = nullptr;
@@ -53,8 +53,8 @@ namespace Engine {
         transfer_queue_index = -1;
     };
 
-    Device* Device::CreateDevice(VulkanRendererBackend* backend) {
-        Device* newDevice = new Device();
+    VulkanDevice* VulkanDevice::CreateDevice(VulkanRendererBackend* backend) {
+        VulkanDevice* newDevice = new VulkanDevice();
         
         if (!newDevice->SelectPhysicalDevice()) {
             return nullptr;
@@ -147,11 +147,11 @@ namespace Engine {
         return newDevice;
     };
 
-    void Device::DestroyDevice() {
+    void VulkanDevice::DestroyDevice() {
         
     };
 
-    b8 Device::SelectPhysicalDevice() {
+    b8 VulkanDevice::SelectPhysicalDevice() {
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         u32 physical_device_count = 0;
@@ -280,7 +280,7 @@ namespace Engine {
         return true;
     };
 
-    b8 Device::PhysicalDeviceMeetsRequirements(
+    b8 VulkanDevice::PhysicalDeviceMeetsRequirements(
         VkPhysicalDevice physical_device, 
         VkSurfaceKHR surface, 
         VkPhysicalDeviceProperties* properties,
@@ -435,7 +435,7 @@ namespace Engine {
     }
 
 
-    void Device::QuerySwapchainSupport(
+    void VulkanDevice::QuerySwapchainSupport(
         VkPhysicalDevice physical_device,
         VkSurfaceKHR surface,
         VulkanSwapchainSupportInfo* out_swapchain_support) {
@@ -484,7 +484,7 @@ namespace Engine {
         }
     };
 
-    b8 Device::DetectDepthFormat() {
+    b8 VulkanDevice::DetectDepthFormat() {
         const u64 candidate_count = 3;
         VkFormat candidates[candidate_count] = {
             VK_FORMAT_D32_SFLOAT,

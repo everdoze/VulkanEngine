@@ -3,7 +3,7 @@
 #include "vulkan.hpp"
 #include "platform/platform.hpp"
 #include "renderer/renderer_types.inl"
-#include "vulkan_helpers.hpp"
+#include "helpers.hpp"
 
 namespace Engine {
 
@@ -15,9 +15,11 @@ namespace Engine {
         VkDescriptorSetLayout* descriptors_set_layouts,
         u32 stage_count,
         VkPipelineShaderStageCreateInfo* stages,
+        u32 stride,
         VkViewport viewport, 
         VkRect2D scissor,
-        b8 is_wireframe) {
+        b8 is_wireframe,
+        b8 depth_test_enabled) {
         
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
@@ -56,11 +58,12 @@ namespace Engine {
 
         //Depth and stencil testing
         VkPipelineDepthStencilStateCreateInfo depth_stencil_create_info = {VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
-        depth_stencil_create_info.depthTestEnable = VK_TRUE;
-        depth_stencil_create_info.depthWriteEnable = VK_TRUE;
-        depth_stencil_create_info.depthCompareOp = VK_COMPARE_OP_LESS;
+        depth_stencil_create_info.depthTestEnable = depth_test_enabled ? VK_TRUE : VK_FALSE;
+        depth_stencil_create_info.depthWriteEnable = depth_test_enabled ? VK_TRUE : VK_FALSE;
+        depth_stencil_create_info.depthCompareOp = depth_test_enabled ? VK_COMPARE_OP_LESS : VK_COMPARE_OP_NEVER;
         depth_stencil_create_info.depthBoundsTestEnable = VK_FALSE;
         depth_stencil_create_info.stencilTestEnable = VK_FALSE;
+        
 
         //Color blend attachment
         VkPipelineColorBlendAttachmentState color_blend_attachment_state;
@@ -97,7 +100,7 @@ namespace Engine {
         VkVertexInputBindingDescription binding_description;
         Platform::ZMemory(&binding_description, sizeof(VkVertexInputBindingDescription));
         binding_description.binding = 0;
-        binding_description.stride = sizeof(Vertex3D);
+        binding_description.stride = stride;
         binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
         // Attibutes

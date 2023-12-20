@@ -70,8 +70,8 @@ class Test : public Engine::Application {
 
 Engine::Application* Engine::CreateApplication(Engine::ApplicationCommandLineArgs args) {
     Engine::ApplicationSetup setup;
-    setup.height = 600;
-    setup.width = 800;
+    setup.height = 800;
+    setup.width = 1280;
     setup.start_x = 100;
     setup.start_y = 100;
     setup.name = "name";

@@ -75,6 +75,7 @@ namespace Engine {
             Clock clock;
 
             Geometry* test_geometry;
+            Geometry* test_ui_geometry;
             u32 current_texture = 2;
             
             f64 last_time;
