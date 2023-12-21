@@ -1,7 +1,7 @@
 #include "fence.hpp"
 
 #include "vulkan.hpp"
-#include "vulkan_helpers.hpp"
+#include "helpers.hpp"
 #include "core/logger/logger.hpp"
 
 namespace Engine {
@@ -39,6 +39,10 @@ namespace Engine {
     b8 VulkanFence::Wait(u64 timeout_ns) {
         if (!this->is_signaled) {
             VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+            if (!this->handle) {
+                u32 size = 10;
+                size = 12;
+            }
             VkResult result = vkWaitForFences(
                 backend->GetVulkanDevice()->logical_device,
                 1,

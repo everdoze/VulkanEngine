@@ -19,6 +19,9 @@ namespace Engine {
             glm::mat4 GetProjectionMatrix() { return projection; };
             glm::mat4 GetViewMatrix() { return view; };
 
+            glm::mat4 GetUIProjectionMatrix() { return ui_projection; };
+            glm::mat4 GetUIViewMatrix() { return ui_view; };
+
             void MoveUp(f32 amount);
             void MoveDown(f32 amount);
             void MoveForward(f32 amount);
@@ -39,11 +42,17 @@ namespace Engine {
             void GenerateProjectionMatrix();
             void GenerateViewMatrix();
 
+            void GenerateUIProjectionMatrix();
+            void GenerateUIViewMatrix();
+
             glm::vec3 camera_position = glm::vec3(0, 0, 30.0f);
             glm::vec3 camera_euler = glm::vec3(0, 0, 0);
 
             glm::mat4 projection;
             glm::mat4 view;
+
+            glm::mat4 ui_projection;
+            glm::mat4 ui_view;
 
             // TODO: Probably need to configurate these
             f32 near_clip = 0.1f;

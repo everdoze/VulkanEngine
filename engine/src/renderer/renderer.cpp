@@ -23,7 +23,9 @@ namespace Engine {
 
     b8 RendererFrontend::Initialize(RendererSetup setup, RendererBackendType type) {
         instance = new RendererFrontend();
-        instance->CreateBackend(setup, type);
+        if (!instance->CreateBackend(setup, type)) {
+            return false;
+        };
         instance->CreateCamera();
         instance->InitializeRenderer();
         
@@ -56,7 +58,10 @@ namespace Engine {
                 backend = nullptr;
             } break;
         }
-        backend->Initialize();
+
+        if (!backend->Initialize()) {
+            return false;
+        }
 
         return true;
     };
@@ -89,11 +94,46 @@ namespace Engine {
             
             instance->camera->OnUpdate();
 
-            instance->backend->UpdateGlobalState(instance->camera->GetProjectionMatrix(), instance->camera->GetViewMatrix(), glm::vec3(), glm::vec4(1), 0);
+            // World renderpass begin
+            if (!instance->backend->BeginRenderpass(BuiltinRenderpasses::WORLD)) {
+                ERROR("backend->BeginRenderpass: BuiltinRenderpasses::WORLD failed. Application shutting down...");
+                return false;
+            }
+
+            instance->backend->UpdateGlobalWorldState(
+                instance->camera->GetProjectionMatrix(), 
+                instance->camera->GetViewMatrix(), 
+                glm::vec3(), glm::vec4(1), 0);
             
             for (u32 i = 0; i < packet->geometries.size(); ++i) {
                 instance->backend->DrawGeometry(packet->geometries[i]);
             }
+            
+            if (!instance->backend->EndRenderpass(BuiltinRenderpasses::WORLD)) {
+                ERROR("backend->EndRenderpass: BuiltinRenderpasses::WORLD failed. Application shutting down...");
+                return false;
+            }
+            // World renderpass end
+
+            // UI renderpass begin
+            if (!instance->backend->BeginRenderpass(BuiltinRenderpasses::UI)) {
+                ERROR("backend->BeginRenderpass: BuiltinRenderpasses::UI failed. Application shutting down...");
+                return false;
+            }
+
+            instance->backend->UpdateGlobalUIState(
+                instance->camera->GetUIProjectionMatrix(),
+                instance->camera->GetUIViewMatrix(), 0);
+
+            for (u32 i = 0; i < packet->ui_geometries.size(); ++i) {
+                instance->backend->DrawGeometry(packet->ui_geometries[i]);
+            }
+
+            if (!instance->backend->EndRenderpass(BuiltinRenderpasses::UI)) {
+                ERROR("backend->EndRenderpass: BuiltinRenderpasses::UI failed. Application shutting down...");
+                return false;
+            }
+            // UI renderpass end
 
             b8 result = instance->EndFrame(packet->delta_time);
             if (!result) {
@@ -123,7 +163,7 @@ namespace Engine {
         if (!backend) {
             return false;
         }
-        return backend->UpdateGlobalState(projection, view, view_position, ambient_colour, mode);
+        return backend->UpdateGlobalWorldState(projection, view, view_position, ambient_colour, mode);
     };
 
     void RendererFrontend::DrawGeometry(GeometryRenderData data) {

@@ -20,9 +20,11 @@ namespace Engine {
                 VkDescriptorSetLayout* descriptors_set_layouts,
                 u32 stage_count,
                 VkPipelineShaderStageCreateInfo* stages,
+                u32 stride,
                 VkViewport viewport, 
                 VkRect2D scissor,
-                b8 is_wireframe
+                b8 is_wireframe,
+                b8 depth_test_enabled
             );
 
             ~VulkanPipeline();

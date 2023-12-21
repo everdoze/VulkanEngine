@@ -2,11 +2,10 @@
 
 #include "platform/platform.hpp"
 #include "core/logger/logger.hpp"
-#include "vulkan_helpers.hpp"
+#include "helpers.hpp"
 #include "renderer/renderer_types.inl"
-#include "vulkan_texture.hpp"
-
-#define BUILTIN_SHADER_NAME_OBJECT "Builtin.MaterialShader"
+#include "texture.hpp"
+#include "material.hpp"
 
 namespace Engine {
 
@@ -52,6 +51,16 @@ namespace Engine {
         return VK_FALSE;
     };
 
+    VulkanRendererBackend::VulkanRendererBackend(RendererSetup setup) : RendererBackend(setup) {
+        object_vertex_buffer = nullptr;
+        object_index_buffer = nullptr;
+        material_shader = nullptr;
+        ui_shader = nullptr;
+        allocator = nullptr;
+        device = nullptr;
+        swapchain = nullptr;
+    };
+
     b8 VulkanRendererBackend::Initialize() {
         recreating_swapchain = false;
         image_index = 0;
@@ -88,9 +97,10 @@ namespace Engine {
         #if defined(_DEBUG)
             DEBUG("Validation layers enabled due to debug mode. Enumerating...");
 
-            // List of validation layers required
+            // List of validation layers required VULKAN VALIDATION_LAYERS
             std::vector<char*> validation_layers_v;
             validation_layers_v.push_back((char*)"VK_LAYER_KHRONOS_validation");
+            // validation_layers_v.push_back((char*)"VK_LAYER_LUNARG_api_dump");
             validation_layers_count = validation_layers_v.size();
 
             // Obtain a list of available validation layers
@@ -163,7 +173,7 @@ namespace Engine {
         DEBUG("Vulkan surface created successfully.");
         
         // Device
-        device = Device::CreateDevice(this);
+        device = VulkanDevice::CreateDevice(this);
         if (!device) {
             ERROR("Failed to create Vulkan device!")
             return false;
@@ -175,14 +185,14 @@ namespace Engine {
             return false;
         }
 
-        // Renderpass
-        if (!RenderpassCreate()) {
-            ERROR("Failed to create Vulkan renderpass!");
+        // Renderpasses
+        if (!RenderpassesCreate()) {
+            ERROR("Failed to create Vulkan renderpasses!");
             return false;
         }
 
         // Swapchain framebuffers
-        swapchain->GenerateFramebuffers(main_renderpass);
+        GenerateFramebuffers();
 
         // Command buffers
         DEBUG("Creating command buffers...");
@@ -192,11 +202,19 @@ namespace Engine {
         DEBUG("Creating sync objects...");
         CreateSyncObjects();
 
-        // Create default shader
-        DEBUG("Creating builtin object shader...");
-        default_shader = new VulkanShader(BUILTIN_SHADER_NAME_OBJECT);
-        if (!default_shader->ready) {
-            ERROR("Error when creating default object shader...");
+        // Create material shader
+        DEBUG("Creating shader '%s' ...", BUILTIN_MATERIAL_SHADER_NAME);
+        material_shader = new VulkanMaterialShader(BUILTIN_MATERIAL_SHADER_NAME);
+        if (!material_shader->ready) {
+            ERROR("Error when creating default material shader...");
+            return false;
+        }
+
+        // Create UI shader
+        DEBUG("Creating shader '%s' ...", BUILTIN_UI_SHADER_NAME);
+        ui_shader = new VulkanUIShader(BUILTIN_UI_SHADER_NAME);
+        if (!ui_shader->ready) {
+            ERROR("Error when creating default UI shader...");
             return false;
         }
 
@@ -214,15 +232,14 @@ namespace Engine {
     void VulkanRendererBackend::Shutdown() {
         vkDeviceWaitIdle(device->logical_device);
 
-        // default_shader->ReleaseResources(obj_id);
-
         // Destroy buffers
         DEBUG("Destroying Vulkan buffers...");
         DestroyBuffers();
         
         // Destroy shader module
-        DEBUG("Destroying Vulkan shader module...");
-        delete default_shader;
+        DEBUG("Destroying Vulkan shader modules...");
+        delete material_shader;
+        delete ui_shader;
 
         // Destroy sync objects
         DEBUG("Destroying Vulkan sync objects...");
@@ -232,13 +249,10 @@ namespace Engine {
         DEBUG("Destroying Vulkan command buffers...");
         DestroyCommandBuffers();
 
-        // Destroy framebuffers
-        DEBUG("Destroying Vulkan framebuffers...");
-        swapchain->DestroyFramebuffers();
-
-        // Destroy renderpass
-        DEBUG("Destroying Vulkan renderpass...");
-        delete main_renderpass;
+        // Destroy renderpasses
+        DEBUG("Destroying Vulkan renderpasses...");
+        delete ui_renderpass;
+        delete world_renderpass;
 
         // Destroy swapchain
         DEBUG("Destroying Vulkan swapchain...");
@@ -284,6 +298,14 @@ namespace Engine {
                 return false;
             }
 
+            // Update render area
+            world_renderpass->OnResize(
+                glm::vec4(0, 0, this->width, this->height)
+            );
+            ui_renderpass->OnResize(
+                glm::vec4(0, 0, this->width, this->height)
+            );
+
             DEBUG("Resized, booting.");
             return false;
         }
@@ -327,22 +349,72 @@ namespace Engine {
         vkCmdSetViewport(command_buffer->handle, 0, 1, &viewport);
         vkCmdSetScissor(command_buffer->handle, 0, 1, &scissor);
 
-        main_renderpass->w = width;
-        main_renderpass->h = height;
-
-        main_renderpass->Begin(command_buffer);
+        world_renderpass->render_area.z = width;
+        world_renderpass->render_area.w = height;
 
         return true;
     };
 
-    void VulkanRendererBackend::DrawGeometry() {
+    b8 VulkanRendererBackend::BeginRenderpass(u8 renderpass_id) {
+        VulkanRenderpass* renderpass = nullptr;
+        VulkanFramebuffer* framebuffer = nullptr;
+        VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
+        
+        switch (renderpass_id) {
+            case (u8)BuiltinRenderpasses::WORLD: {
+                renderpass = world_renderpass;
+                framebuffer = swapchain->world_framebuffers[image_index];
+            } break;
 
+            case (u8)BuiltinRenderpasses::UI: {
+                renderpass = ui_renderpass;
+                framebuffer = swapchain->ui_framebuffers[image_index];
+            } break;
+
+            default: {
+                ERROR("VulkanRendererBackend::BeginRenderpasses called with unknown renderpass id: %#02x", renderpass_id);
+                return false;
+            };
+        }
+
+        renderpass->Begin(command_buffer, framebuffer);
+
+        switch (renderpass_id) {
+            case (u8)BuiltinRenderpasses::WORLD: {
+                material_shader->Use();
+            } break;
+
+            case (u8)BuiltinRenderpasses::UI: {
+                ui_shader->Use();
+            } break;
+        }
+
+        return true;
+    };
+
+    b8 VulkanRendererBackend::EndRenderpass(u8 renderpass_id) {
+        VulkanRenderpass* renderpass = nullptr;
+        VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
+        switch (renderpass_id) {
+            case (u8)BuiltinRenderpasses::WORLD: {
+                renderpass = world_renderpass;
+            } break;
+
+            case (u8)BuiltinRenderpasses::UI: {
+                renderpass = ui_renderpass;
+            } break;
+
+            default: {
+                ERROR("VulkanRendererBackend::EndRenderpass called with unknown renderpass id: %#02x", renderpass_id);
+                return false;
+            };
+        }
+        renderpass->End(command_buffer);
+        return true;
     };
 
     b8 VulkanRendererBackend::EndFrame(f32 delta_time) {
         VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
-
-        main_renderpass->End(command_buffer);
         command_buffer->End();
 
         // Make sure the previous frame is not using this image (i.e. its fence is being waited on)
@@ -430,7 +502,11 @@ namespace Engine {
     };
 
     b8 VulkanRendererBackend::SwapchainRecreate(u16 width, u16 height) {
-        delete swapchain;
+        if (swapchain) {
+            delete swapchain;
+        } else {
+            ERROR("VulkanRendererBackend::SwapchainRecreate called when swapchain does not exists.");
+        }
         return SwapchainCreate(width, height);
     };
 
@@ -453,25 +529,23 @@ namespace Engine {
         vkDeviceWaitIdle(device->logical_device);
 
         for (u32 i = 0; i < swapchain->image_count; ++i) {
-            delete images_in_flight[i];
+            images_in_flight[i] = nullptr;
         }
-
-        swapchain->DestroyFramebuffers();
 
         SwapchainRecreate(cached_width, cached_height);
 
         width = cached_width;
         height = cached_height;
 
-        main_renderpass->w = width;
-        main_renderpass->h = height;
+        world_renderpass->render_area.z = width;
+        world_renderpass->render_area.w = height;
 
         cached_width = 0; 
         cached_height = 0;
         
         framebuffer_last_generation = framebuffer_generation;
 
-        swapchain->GenerateFramebuffers(main_renderpass);
+        GenerateFramebuffers();
 
         CreateCommandBuffers();
 
@@ -480,12 +554,37 @@ namespace Engine {
         return true;
     };
 
-    b8 VulkanRendererBackend::RenderpassCreate() {
-        main_renderpass = new VulkanRenderpass(
-            0, 0, this->width, this->height,
-            0.0f, 0.1f, 0.1f, 1.0f,
-            1.0f, 0);
-        return main_renderpass->ready;
+    void VulkanRendererBackend::RegenerateFramebuffers() {
+        swapchain->RegenerateFramebuffers(width, height);
+    };
+
+    void VulkanRendererBackend::GenerateFramebuffers() {
+        swapchain->GenerateUIFramebuffers(ui_renderpass);
+        swapchain->GenerateWorldFramebuffers(world_renderpass);
+    };
+
+    b8 VulkanRendererBackend::RenderpassesCreate() {
+        // World Renderpass
+        world_renderpass = new VulkanRenderpass(
+            "WorldRenderpass",
+            glm::vec4(0, 0, this->width, this->height),
+            glm::vec4(0.0f, 0.1f, 0.1f, 1.0f),
+            1.0f, 0, // Depth, Stencil
+            VulkanRenderPassClearFlag::CLEAR_COLOR_BUFFER | 
+            VulkanRenderPassClearFlag::CLEAR_COLOR_DEPTH_BUFER | 
+            VulkanRenderPassClearFlag::CLEAR_COLOR_STENCIL_BUFFER,
+            false, true); // HasPrevPass, HasNextPass 
+
+        // UI Renderpass
+        ui_renderpass = new VulkanRenderpass(
+            "UIRenderpass",
+            glm::vec4(0, 0, this->width, this->height),
+            glm::vec4(0.0f, 0.0f, 0.0f, 0.0f),
+            1.0f, 0, // Depth, Stencil
+            VulkanRenderPassClearFlag::CLEAR_NONE,
+            true, false); // HasPrevPass, HasNextPass 
+    
+        return world_renderpass->ready && ui_renderpass->ready;
     };
 
     void VulkanRendererBackend::CreateSyncObjects() {
@@ -581,6 +680,7 @@ namespace Engine {
         VkMemoryPropertyFlagBits memory_property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
         const u64 vertex_buffer_size = sizeof(Vertex3D) MB;
 
+        // Geometry vertex buffer
         object_vertex_buffer = new VulkanBuffer(
             vertex_buffer_size,
             (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
@@ -591,6 +691,7 @@ namespace Engine {
             return false;
         }
 
+        // Geometry index buffer
         const u64 index_buffer_size = sizeof(u32) MB;
         object_index_buffer = new VulkanBuffer(
             index_buffer_size,
@@ -602,25 +703,48 @@ namespace Engine {
             return false;
         }
 
+        // Create freelists for buffers
+        vertex_buffer_freelist = new Freelist(vertex_buffer_size);
+        index_buffer_freelist = new Freelist(index_buffer_size);
+
         DEBUG("Vulkan buffers created successfully.");
         return true;
     };
 
 
     void VulkanRendererBackend::DestroyBuffers() {
-        delete object_vertex_buffer;
-        delete object_index_buffer;
+        if (object_vertex_buffer) {
+            delete object_vertex_buffer;
+        }
+        if (object_index_buffer) {
+            delete object_index_buffer;
+        }
+        if (vertex_buffer_freelist) {
+            delete vertex_buffer_freelist;
+        }
+        if (index_buffer_freelist) {
+            delete index_buffer_freelist;
+        }
     };
 
 
-    b8 VulkanRendererBackend::UpdateGlobalState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_colour, i32 mode) {
-        default_shader->global_ubo.projection = projection;
-        default_shader->global_ubo.view = view;
+    b8 VulkanRendererBackend::UpdateGlobalWorldState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_color, i32 mode) {
+        material_shader->global_ubo.projection = projection;
+        material_shader->global_ubo.view = view;
 
-        default_shader->UpdateGlobalState();
+        material_shader->UpdateGlobalState();
         
         return true;
     };  
+
+    b8 VulkanRendererBackend::UpdateGlobalUIState(glm::mat4 projection, glm::mat4 view, i32 mode) {
+        ui_shader->global_ubo.projection = projection;
+        ui_shader->global_ubo.view = view;
+
+        ui_shader->UpdateGlobalState();
+        
+        return true;
+    };
 
     void VulkanRendererBackend::DrawGeometry(GeometryRenderData data) {
         if (!data.geometry || data.geometry->GetInternalId() == INVALID_ID) {
@@ -629,11 +753,22 @@ namespace Engine {
         VulkanGeometry* geometry = static_cast<VulkanGeometry*>(data.geometry);
         VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
 
-        default_shader->Use();
+        Material* material = data.geometry->GetMaterial();
 
-        default_shader->UseModel(data.model);
-
-        default_shader->UseMaterial(data.geometry->GetMaterial());
+        switch (material->GetType())
+        {
+            case MaterialType::WORLD: {
+                material_shader->UseModel(data.model);
+                material_shader->UseMaterial(material);
+            } break;
+            case MaterialType::UI: {
+                ui_shader->UseModel(data.model);
+                ui_shader->UseMaterial(material);
+            } break;
+            default:
+                ERROR("VulkanRendererBackend::DrawGeometry - Unknown material type used...");
+                return;
+        }
 
         VkDeviceSize offsets[1] = {geometry->GetVertexBufferOffset()};
         vkCmdBindVertexBuffers(command_buffer->handle, 0, 1, &object_vertex_buffer->handle, (VkDeviceSize*)offsets);
@@ -658,45 +793,57 @@ namespace Engine {
     };
 
     Material* VulkanRendererBackend::CreateMaterial(MaterialCreateInfo& info) {
-        Material* material = new Material(info);
-        if (!default_shader->AcquireResources(material)) {
-            ERROR("Unable to acquire resources for material: '%s'", material->GetName().c_str());
-        };
+        VulkanMaterial* material = new VulkanMaterial(info);
+        switch (material->GetType()) {
+            case MaterialType::WORLD: {
+                if (!material_shader->AcquireResources(material)) {
+                    ERROR("Unable to acquire resources for world material: '%s'", material->GetName().c_str());
+                };
+            } break;
+            case MaterialType::UI: {
+                if (!ui_shader->AcquireResources(material)) {
+                    ERROR("Unable to acquire resources for UI material: '%s'", material->GetName().c_str());
+                };
+            } break;
+            default:
+                ERROR("VulkanRendererBackend::CreateMaterial - Unknown material type");
+                return nullptr;
+        }
         return material;
     };
 
     Geometry* VulkanRendererBackend::CreateGeometry(GeometryCreateInfo& info) {
-        if (!info.vertices.size()) {
+        if (!info.vertex_count || !info.vertex_element_size || !info.vertices) {
             ERROR("No vertex data was supplied to VulkanRendererBackend::CreateGeometry.");
             return nullptr;
         } 
         
         VulkanGeometryCreateInfo create_info = {};
-        create_info.vertex_buffer_offset = vertex_buffer_offset;
-        create_info.vertex_count = info.vertices.size();
-        create_info.vertex_size = sizeof(Vertex3D) * info.vertices.size();
-
-        create_info.index_buffer_offset = index_buffer_offset;
-        create_info.index_count = info.indices.size();
-        create_info.index_size = sizeof(u32) * info.indices.size();
         
+        create_info.vertex_count = info.vertex_count;
+        create_info.vertex_size = info.vertex_element_size * info.vertex_count;
+        create_info.vertex_memory = vertex_buffer_freelist->AllocateBlock(create_info.vertex_size);
 
+        create_info.index_count = info.index_count;
+        create_info.index_size = info.index_element_size * info.index_count;
+        if (create_info.index_size > 0) {
+            create_info.index_memory = index_buffer_freelist->AllocateBlock(create_info.index_size);
+        }
+        
         VulkanGeometry* g = new VulkanGeometry(info, create_info);
 
         UploadDataRange(
             device->graphics_command_pool, 
             0, device->graphics_queue, 
             object_vertex_buffer, g->GetVertexBufferOffset(), 
-            g->GetVertexSize(), info.vertices.data());
+            g->GetVertexSize(), info.vertices);
 
-        vertex_buffer_offset += g->GetVertexSize();
-
-        if (info.indices.size()) {
+        if (info.indices) {
             UploadDataRange(
                 device->graphics_command_pool, 
                 0, device->graphics_queue, 
                 object_index_buffer, g->GetIndexBufferOffset(), 
-                g->GetIndexSize(), info.indices.data());
+                g->GetIndexSize(), info.indices);
         }
 
         g->UpdateGeneration();
@@ -704,15 +851,24 @@ namespace Engine {
         return g;
     };
 
-    b8 VulkanRendererBackend::DestroyGeometry(VulkanGeometry* geometry) {
-        
-    };
-
     void VulkanRendererBackend::FreeGeometry(VulkanGeometry* geometry) {
         vkDeviceWaitIdle(device->logical_device);
         FreeDataRange(object_vertex_buffer, geometry->GetVertexBufferOffset(), geometry->GetVertexSize());
         if (geometry->GetIndexSize()) {
             FreeDataRange(object_index_buffer, geometry->GetIndexBufferOffset(), geometry->GetVertexSize());
+        }
+    };
+
+    void VulkanRendererBackend::ReleaseMaterial(VulkanMaterial* material) {
+        if (material) {
+            switch (material->GetType()) {
+                case MaterialType::WORLD: {
+                    material_shader->ReleaseResources(material);
+                } break;
+                case MaterialType::UI: {
+                    ui_shader->ReleaseResources(material);
+                } break;
+            }
         }
     };
 

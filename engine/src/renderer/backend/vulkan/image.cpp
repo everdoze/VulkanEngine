@@ -1,6 +1,6 @@
 #include "swapchain.hpp"
 #include "vulkan.hpp"
-#include "vulkan_helpers.hpp"
+#include "helpers.hpp"
 #include "core/logger/logger.hpp"
 
 #include "platform/platform.hpp"

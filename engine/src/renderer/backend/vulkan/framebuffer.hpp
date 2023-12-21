@@ -21,8 +21,11 @@ namespace Engine {
 
             ~VulkanFramebuffer();
 
+            void Regenerate(u32 width, u32 height);
+
         private:
             class VulkanRenderpass* renderpass;
+            void VulkanCreate(u32 width, u32 height);
     };
 
 };

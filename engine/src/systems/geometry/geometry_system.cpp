@@ -10,11 +10,17 @@ namespace Engine {
     GeometrySystem* GeometrySystem::instance = nullptr;
 
     GeometrySystem::GeometrySystem() {
-        CreateDefaultGeometry();
+        CreateDefaultGeometries();
     };
 
     GeometrySystem::~GeometrySystem() {
-        DestroyDefaultGeometry();
+        DestroyDefaultGeometries();
+
+        for (Geometry* geometry : registered_geometries) { 
+            delete geometry;
+        }
+
+        registered_geometries.clear();
     };
 
     b8 GeometrySystem::Initialize() {
@@ -49,7 +55,7 @@ namespace Engine {
         return nullptr;
     };
 
-    void GeometrySystem::CreateDefaultGeometry() {
+    void GeometrySystem::CreateDefaultGeometries() {
         std::vector<Vertex3D> verts(4);
 
         const f32 f = 10.0f;
@@ -79,17 +85,62 @@ namespace Engine {
 
         GeometryCreateInfo create_info;
         create_info.id = 0;
-        create_info.vertices = verts;
-        create_info.indices = indices;
-        create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial();
+        create_info.vertices = verts.data();
+        create_info.vertex_count = verts.size();
+        create_info.vertex_element_size = sizeof(Vertex3D);
+        create_info.indices = indices.data();
+        create_info.index_count = indices.size();
+        create_info.index_element_size = sizeof(u32);
+        create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial(MaterialType::WORLD);
         default_geometry = RendererFrontend::GetInstance()->CreateGeometry(create_info);
         if (!default_geometry) {
-            ERROR("Error occured during creating default geometry.");
+            ERROR("Error occured during creating default 3d geometry.");
         }
+
+        std::vector<Vertex2D> ui_verts(4);
+    
+        ui_verts[0].position.x = -0.5 * f;  // 0    3
+        ui_verts[0].position.y = -0.5 * f;  //
+        ui_verts[0].texcoord.x = 0.0f;      //
+        ui_verts[0].texcoord.y = 0.0f;      // 2    1
+
+        ui_verts[1].position.y = 0.5 * f;
+        ui_verts[1].position.x = 0.5 * f;
+        ui_verts[1].texcoord.x = 1.0f;
+        ui_verts[1].texcoord.y = 1.0f;
+
+        ui_verts[2].position.x = -0.5 * f;
+        ui_verts[2].position.y = 0.5 * f;
+        ui_verts[2].texcoord.x = 0.0f;
+        ui_verts[2].texcoord.y = 1.0f;
+
+        ui_verts[3].position.x = 0.5 * f;
+        ui_verts[3].position.y = -0.5 * f;
+        ui_verts[3].texcoord.x = 1.0f;
+        ui_verts[3].texcoord.y = 0.0f;
+
+        const u32 ui_index_count = 6;
+        std::vector<u32> ui_indices = {2, 1, 0, 3, 0, 1};
+
+        GeometryCreateInfo ui_create_info;
+        ui_create_info.id = 0;
+        ui_create_info.vertices = ui_verts.data();
+        ui_create_info.vertex_count = ui_verts.size();
+        ui_create_info.vertex_element_size = sizeof(Vertex2D);
+        ui_create_info.indices = ui_indices.data();
+        ui_create_info.index_count = ui_indices.size();
+        ui_create_info.index_element_size = sizeof(u32);
+        ui_create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial(MaterialType::WORLD);
+        default_ui_geometry = RendererFrontend::GetInstance()->CreateGeometry(ui_create_info);
+        if (!default_geometry) {
+            ERROR("Error occured during creating default 2d geometry.");
+        }
+
     };
 
-    void GeometrySystem::DestroyDefaultGeometry() {
+    void GeometrySystem::DestroyDefaultGeometries() {
         delete default_geometry;
+        delete default_ui_geometry;
     };
 
     u32 GeometrySystem::GetNewGeometryId() {
@@ -109,11 +160,15 @@ namespace Engine {
         GeometryCreateInfo create_info = {};
         create_info.id = GetNewGeometryId();
         create_info.vertices = config.vertices;
+        create_info.vertex_count = config.vertex_count;
+        create_info.vertex_element_size = config.vertex_size;
         create_info.indices = config.indices;
+        create_info.index_count = config.index_count;
+        create_info.index_element_size = config.index_size;
         create_info.material = MaterialSystem::GetInstance()->AcquireMaterial(config.material_name);
         if (!create_info.material) {
             WARN("Unable to acquire material '%s' for geometry '%s'. Swapping to default.", config.material_name.c_str(), config.name.c_str());
-            create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial();
+            create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial(MaterialType::WORLD);
         }
         create_info.name = config.name;
 
@@ -131,9 +186,15 @@ namespace Engine {
         return g;
     };
 
-    Geometry* GeometrySystem::GetDefaultGeometry() {
+    Geometry* GeometrySystem::GetDefaultGeometry(GeometryType type) {
         // TODO: Checks
-        return default_geometry;
+        switch (type) {
+            case GeometryType::GEOMETRY_3D: 
+                return default_geometry;
+            case GeometryType::GEOMETRY_2D:
+                return default_ui_geometry;
+        }
+        return nullptr;
     };
 
     GeometryConfig GeometrySystem::GeneratePlainConfig(
@@ -168,8 +229,18 @@ namespace Engine {
         }
 
         GeometryConfig config;
-        config.vertices = std::vector<Vertex3D>(x_segment_count * y_segment_count * 4);
-        config.indices = std::vector<u32>(x_segment_count * y_segment_count * 6);
+        const u32 v_size = sizeof(Vertex3D) * x_segment_count * y_segment_count * 4;
+        const u32 i_size = sizeof(u32) * x_segment_count * y_segment_count * 6;
+        config.vertices = Platform::AMemory(v_size);
+        config.indices = Platform::AMemory(i_size);
+
+        Platform::ZMemory(config.vertices, v_size);
+        Platform::ZMemory(config.indices, i_size);
+
+        config.vertex_size = sizeof(Vertex3D);
+        config.vertex_count = x_segment_count * y_segment_count * 4;
+        config.index_size = sizeof(u32);
+        config.index_count = x_segment_count * y_segment_count * 6;
 
         // TODO: This generates extra vertices, but we can always deduplicate them later.
         f32 seg_width = width / x_segment_count;
@@ -189,10 +260,10 @@ namespace Engine {
                 f32 max_uvy = ((y + 1) / (f32)y_segment_count) * tile_y;
 
                 u32 v_offset = ((y * x_segment_count) + x) * 4;
-                Vertex3D* v0 = &config.vertices[v_offset + 0];
-                Vertex3D* v1 = &config.vertices[v_offset + 1];
-                Vertex3D* v2 = &config.vertices[v_offset + 2];
-                Vertex3D* v3 = &config.vertices[v_offset + 3];
+                Vertex3D* v0 = &((Vertex3D*)config.vertices)[v_offset + 0];
+                Vertex3D* v1 = &((Vertex3D*)config.vertices)[v_offset + 1];
+                Vertex3D* v2 = &((Vertex3D*)config.vertices)[v_offset + 2];
+                Vertex3D* v3 = &((Vertex3D*)config.vertices)[v_offset + 3];
 
                 v0->position.x = min_x;
                 v0->position.y = min_y;
@@ -216,12 +287,12 @@ namespace Engine {
 
                 // Generate indices
                 u32 i_offset = ((y * x_segment_count) + x) * 6;
-                config.indices[i_offset + 0] = v_offset + 0;
-                config.indices[i_offset + 1] = v_offset + 1;
-                config.indices[i_offset + 2] = v_offset + 2;
-                config.indices[i_offset + 3] = v_offset + 0;
-                config.indices[i_offset + 4] = v_offset + 3;
-                config.indices[i_offset + 5] = v_offset + 1;
+                ((u32*)config.indices)[i_offset + 0] = v_offset + 0;
+                ((u32*)config.indices)[i_offset + 1] = v_offset + 1;
+                ((u32*)config.indices)[i_offset + 2] = v_offset + 2;
+                ((u32*)config.indices)[i_offset + 3] = v_offset + 0;
+                ((u32*)config.indices)[i_offset + 4] = v_offset + 3;
+                ((u32*)config.indices)[i_offset + 5] = v_offset + 1;
             }
         }
 

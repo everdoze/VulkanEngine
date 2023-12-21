@@ -31,12 +31,17 @@ namespace Engine {
 
             virtual ~RendererBackend() = default;
 
+            b8 BeginRenderpass(BuiltinRenderpasses renderpass_id) { return this->BeginRenderpass((u8)renderpass_id); };
+            b8 EndRenderpass(BuiltinRenderpasses renderpass_id) { return this->EndRenderpass((u8)renderpass_id); };
+            virtual b8 BeginRenderpass(u8 renderpass_id) = 0;
+            virtual b8 EndRenderpass(u8 renderpass_id) = 0;
             virtual b8 Initialize() = 0;
             virtual void Shutdown() = 0;
             virtual void Resized(u16 width, u16 height) = 0;
             virtual b8 BeginFrame(f32 delta_time) = 0;
             virtual b8 EndFrame(f32 delta_time) = 0;
-            virtual b8 UpdateGlobalState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_colour, i32 mode) = 0;
+            virtual b8 UpdateGlobalWorldState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_colour, i32 mode) = 0;
+            virtual b8 UpdateGlobalUIState(glm::mat4 projection, glm::mat4 view, i32 mode) = 0;
             virtual void DrawGeometry(GeometryRenderData data) = 0;
 
             u32 GetFrameWidth() { return width; };

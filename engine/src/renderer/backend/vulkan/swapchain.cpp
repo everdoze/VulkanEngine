@@ -1,6 +1,6 @@
 #include "swapchain.hpp"
 #include "vulkan.hpp"
-#include "vulkan_helpers.hpp"
+#include "helpers.hpp"
 #include "core/logger/logger.hpp"
 #include "platform/platform.hpp"
 
@@ -13,6 +13,7 @@ namespace Engine {
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
         ready = false;
+        depth_attachment = nullptr;
  
         VkExtent2D swapchain_extent = {width, height};
 
@@ -46,7 +47,7 @@ namespace Engine {
             }
         }
 
-        auto device = backend->GetVulkanDevice();
+        VulkanDevice* device = backend->GetVulkanDevice();
         backend->GetVulkanDevice()->QuerySwapchainSupport(
             device->physical_device,
             backend->GetVulkanSurface(),
@@ -168,6 +169,9 @@ namespace Engine {
 
         vkDeviceWaitIdle(backend->GetVulkanDevice()->logical_device);
 
+        DEBUG("|_Destroying Vulkan framebuffers...");
+        DestroyFramebuffers();
+
         delete depth_attachment;
 
         for (u32 i = 0; i < this->image_count; ++i) {
@@ -211,9 +215,30 @@ namespace Engine {
             out_index);
     };
 
-    void VulkanSwapchain::GenerateFramebuffers(VulkanRenderpass* renderpass) {
+    void VulkanSwapchain::GenerateUIFramebuffers(VulkanRenderpass* renderpass) {
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
-        framebuffers.reserve(image_count);
+        ui_framebuffers.reserve(image_count);
+        for (u32 i = 0; i < this->image_count; ++i) {
+            u32 attachment_count = 1;
+            
+            VkImageView attachments[] = {
+                this->views[i]
+            };
+
+            ui_framebuffers.push_back(
+                new VulkanFramebuffer(
+                    renderpass,
+                    backend->GetFrameWidth(),
+                    backend->GetFrameHeight(),
+                    attachment_count,
+                    attachments)
+            );
+        }
+    };
+
+    void VulkanSwapchain::GenerateWorldFramebuffers(VulkanRenderpass* renderpass) {
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        world_framebuffers.reserve(this->image_count);
         for (u32 i = 0; i < this->image_count; ++i) {
             u32 attachment_count = 2;
             
@@ -222,7 +247,7 @@ namespace Engine {
                 this->depth_attachment->view
             };
 
-            framebuffers.push_back(
+            world_framebuffers.push_back(
                 new VulkanFramebuffer(
                     renderpass,
                     backend->GetFrameWidth(),
@@ -230,16 +255,25 @@ namespace Engine {
                     attachment_count,
                     attachments)
             );
-
         }
-        
+    };
+
+    void VulkanSwapchain::RegenerateFramebuffers(u32 width, u32 height) {
+        for (VulkanFramebuffer* framebuffer : world_framebuffers) {
+            framebuffer->Regenerate(width, height);
+        }
+        for (VulkanFramebuffer* framebuffer : ui_framebuffers) {
+            framebuffer->Regenerate(width, height);
+        }
     };
 
     void VulkanSwapchain::DestroyFramebuffers() {
         for (u32 i = 0; i < this->image_count; ++i) {
-            delete framebuffers[i];
+            delete ui_framebuffers[i];
+            delete world_framebuffers[i];
         }
-        framebuffers.clear();
+        ui_framebuffers.clear();
+        world_framebuffers.clear();
     };
 
 };

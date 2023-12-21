@@ -5,10 +5,30 @@
 namespace Engine {
     
     Logger* Logger::m_Instance = nullptr;
+    
+    Logger::Logger(std::string file_path) {
+        file = nullptr;
+        if (file_path.size()) {
+            file = FileSystem::FileOpen(file_path, FileMode::WRITE, false);
+        }
+    };
+
+    Logger::~Logger() {
+        if (file) {
+            file->WriteLine("-------------------END OF LOG---------------------\n");
+            FileSystem::FileClose(file);
+        }
+    };
 
     Logger* Logger::Initialize() {
         if (!m_Instance) {
-            m_Instance = new Logger();
+            m_Instance = new Logger(
+                #ifdef _DEBUG
+                LOG_FILE_PATH
+                #else
+                ""
+                #endif
+            );
         }
         return m_Instance;
     };
@@ -36,11 +56,13 @@ namespace Engine {
     void Logger::LogString(std::string text, u8 level) {
         std::string temp = FormatLogLevel(text, level);
         Platform::ConsoleWrite(temp, level);
+        file->WriteLine(temp);
     };
 
     void Logger::LogError(std::string text, u8 level) {
         std::string temp = FormatLogLevel(text, level);
         Platform::ConsoleWriteError(temp, level);
+        file->WriteLine(temp);
     };
     
 

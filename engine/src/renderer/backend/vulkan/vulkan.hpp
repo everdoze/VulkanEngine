@@ -6,10 +6,13 @@
 #include "renderpass.hpp"
 #include "fence.hpp"
 #include "buffer.hpp"
+#include "material.hpp"
 #include "resources/texture/texture.hpp"
 #include "shaders/material_shader.hpp"
-#include "vulkan_texture.hpp"
-#include "vulkan_geometry.hpp"
+#include "shaders/ui_shader.hpp"
+#include "texture.hpp"
+#include "geometry.hpp"
+#include "core/utils/freelist.hpp"
 
 #include <vulkan/vulkan.h>
 
@@ -17,7 +20,8 @@ namespace Engine {
 
     class VulkanRendererBackend : public RendererBackend {
         public:
-            VulkanRendererBackend(RendererSetup setup) : RendererBackend(setup) {};
+            VulkanRendererBackend(RendererSetup setup);
+
             ~VulkanRendererBackend() {};
 
             std::vector<VulkanCommandBuffer*>& GetGraphicsCommandBufers() { return graphics_command_buffers; };
@@ -29,22 +33,23 @@ namespace Engine {
 
             VkInstance GetVulkanInstance() { return vulkan_instance; };
 
-            VulkanRenderpass* GetMainRenderpass() { return main_renderpass; };
-           
+            VulkanRenderpass* GetMainRenderpass() { return world_renderpass; };
+            VulkanRenderpass* GetUIRenderpass() { return ui_renderpass; };
+
             VkAllocationCallbacks* GetVulkanAllocator() { return allocator; };
-            Device* GetVulkanDevice() { return device; };
+            VulkanDevice* GetVulkanDevice() { return device; };
             VulkanSwapchain* GetVulkanSwapchain () { return swapchain; };
 
             Texture* CreateTexture(TextureCreateInfo& info);
             VulkanTexture* CreateTextureInternal(TextureCreateInfo& info);
 
             Material* CreateMaterial(MaterialCreateInfo& info);
-
             Geometry* CreateGeometry(GeometryCreateInfo& info);
-            // b8 ReuploadGeometry(VulkanGeometry* geometry);
-            b8 DestroyGeometry(VulkanGeometry* geometry);
 
-            void DrawGeometry();
+            void GenerateFramebuffers();
+            void RegenerateFramebuffers();
+            b8 BeginRenderpass(u8 renderpass_id);
+            b8 EndRenderpass(u8 renderpass_id);
 
             void SetImageIndex(u32 index) { image_index = index; };
             u32 GetImageIndex() { return image_index; };
@@ -59,7 +64,8 @@ namespace Engine {
             void Resized(u16 width, u16 height);
             b8 BeginFrame(f32 delta_time);
             b8 EndFrame(f32 delta_time);
-            b8 UpdateGlobalState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_colour, i32 mode);
+            b8 UpdateGlobalWorldState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_color, i32 mode);
+            b8 UpdateGlobalUIState(glm::mat4 projection, glm::mat4 view, i32 mode);
             void DrawGeometry(GeometryRenderData data);
 
             b8 SwapchainCreate(u16 width, u16 height);
@@ -75,11 +81,12 @@ namespace Engine {
             b8 CreateBuffers();
             void DestroyBuffers();
 
-            b8 RenderpassCreate();
+            b8 RenderpassesCreate();
 
             void UploadDataRange(VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, u64 offset, u64 size, void* data);
             void FreeDataRange(VulkanBuffer* buffer, u64 offset, u64 size);
             void FreeGeometry(VulkanGeometry* geometry);
+            void ReleaseMaterial(VulkanMaterial* material);
         private:
             // Adding debugger only for debug mode
             #if defined(_DEBUG)
@@ -107,19 +114,20 @@ namespace Engine {
             u32 image_index;
             u32 current_frame;
 
-            VulkanShader* default_shader;
-            Device* device;
+            VulkanMaterialShader* material_shader;
+            VulkanUIShader* ui_shader;
+
+            VulkanDevice* device;
             VulkanSwapchain* swapchain;
-            VulkanRenderpass* main_renderpass;
+            VulkanRenderpass* world_renderpass;
+            VulkanRenderpass* ui_renderpass;
 
             VkSurfaceKHR surface;
             VkInstance vulkan_instance;
-            VkAllocationCallbacks* allocator = nullptr;
+            VkAllocationCallbacks* allocator;
 
-            std::vector<VulkanGeometry*> geometries;
-
-            u32 vertex_buffer_offset = 0;
-            u32 index_buffer_offset = 0;
+            Freelist* vertex_buffer_freelist;
+            Freelist* index_buffer_freelist;
 
             u32 obj_id;
     };

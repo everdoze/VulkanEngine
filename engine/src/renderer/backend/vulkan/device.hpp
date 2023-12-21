@@ -30,12 +30,12 @@ namespace Engine {
         VkPresentModeKHR* present_modes;        
     } VulkanSwapchainSupportInfo;
 
-    class Device {
+    class VulkanDevice {
         public:
-            Device();
-            ~Device();
+            VulkanDevice();
+            ~VulkanDevice();
 
-            static Device* CreateDevice(class VulkanRendererBackend* backend);
+            static VulkanDevice* CreateDevice(class VulkanRendererBackend* backend);
             static void DestroyDevice();
 
             b8 SelectPhysicalDevice();

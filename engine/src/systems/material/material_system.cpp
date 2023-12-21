@@ -12,11 +12,11 @@ namespace Engine {
     MaterialSystem* MaterialSystem::instance = nullptr;
 
     MaterialSystem::MaterialSystem() {
-       CreateDefaultMaterial();
+       CreateDefaultMaterials();
     };
 
     MaterialSystem::~MaterialSystem() {
-        DestroyDefaultMaterial();
+        DestroyDefaultMaterials();
 
         for (auto& [key, material] : registered_materials) { 
             delete material;
@@ -25,18 +25,28 @@ namespace Engine {
         registered_materials.clear();
     };
 
-    void MaterialSystem::CreateDefaultMaterial() {
+    void MaterialSystem::CreateDefaultMaterials() {
         MaterialCreateInfo mat_create_info = {};
         mat_create_info.name = DEFAULT_MATERIAL_NAME;
         mat_create_info.diffuse_color = glm::vec4(1, 1, 1, 1);
         mat_create_info.use = TextureUse::MAP_DIFFUSE;
         mat_create_info.texture = TextureSystem::GetInstance()->GetDefaultTexture();
+        mat_create_info.type = MaterialType::WORLD;
 
         default_material = RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
+
+        mat_create_info.name = DEFAULT_MATERIAL_NAME;
+        mat_create_info.diffuse_color = glm::vec4(1, 1, 1, 1);
+        mat_create_info.use = TextureUse::MAP_DIFFUSE;
+        mat_create_info.texture = TextureSystem::GetInstance()->GetDefaultTexture();
+        mat_create_info.type = MaterialType::UI;
+
+        default_ui_material = RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
     };
 
-    void MaterialSystem::DestroyDefaultMaterial() {
+    void MaterialSystem::DestroyDefaultMaterials() {
         delete default_material;
+        delete default_ui_material;
     };
 
     b8 MaterialSystem::Initialize() {
@@ -68,6 +78,7 @@ namespace Engine {
 
     Material* MaterialSystem::LoadMaterial(MaterialConfig& config) {
         MaterialCreateInfo mat_create_info = {};
+        mat_create_info.type = config.type;
         mat_create_info.name = config.name;
         mat_create_info.diffuse_color = config.diffuse_color;
 

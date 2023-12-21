@@ -1,4 +1,4 @@
-#include "vulkan_helpers.hpp"
+#include "helpers.hpp"
 
 b8 IsVulkanResultSuccess (VkResult result) {
     // From: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/VkResult.html

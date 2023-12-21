@@ -16,6 +16,8 @@ namespace Engine {
 
         GenerateProjectionMatrix();
         GenerateViewMatrix();
+        GenerateUIProjectionMatrix();
+        GenerateUIViewMatrix();
     }
 
     Camera::~Camera() {
@@ -25,6 +27,15 @@ namespace Engine {
         // );
     };
     
+    void Camera::GenerateUIProjectionMatrix() {
+        RendererFrontend* frontend = RendererFrontend::GetInstance();
+        ui_projection = glm::ortho<f32>(0, frontend->GetFrameWidth(), frontend->GetFrameHeight(), 0, -100.0f, 100.0f);
+    };
+
+    void Camera::GenerateUIViewMatrix() {
+        ui_view = glm::inverse(glm::identity<glm::mat4>());
+    };
+
     void Camera::GenerateProjectionMatrix() {
         RendererFrontend* frontend = RendererFrontend::GetInstance();
         projection = glm::perspective(fov, frontend->GetFrameWidth() / (f32)frontend->GetFrameHeight(), near_clip, far_clip);
@@ -41,6 +52,7 @@ namespace Engine {
 
     void Camera::OnResize() {
         GenerateProjectionMatrix();
+        GenerateUIProjectionMatrix();
     };
 
     glm::quat Camera::GetOrientation() {

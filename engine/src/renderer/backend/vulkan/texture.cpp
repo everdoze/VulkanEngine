@@ -1,8 +1,8 @@
-#include "vulkan_texture.hpp"
+#include "texture.hpp"
 #include "buffer.hpp"
 #include "renderer/renderer.hpp"
 #include "renderer/backend/vulkan/vulkan.hpp"
-#include "vulkan_helpers.hpp"
+#include "helpers.hpp"
 #include "core/logger/logger.hpp"
 
 namespace Engine {

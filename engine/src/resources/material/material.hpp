@@ -8,8 +8,14 @@ namespace Engine {
 
     #define DEFAULT_MATERIAL_NAME "default_material"
 
+    enum class MaterialType { 
+        WORLD,
+        UI
+    };
+
     struct MaterialConfig {
         std::string name;
+        MaterialType type;
         b8 auto_release;
         glm::vec4 diffuse_color;
         std::string diffuse_map_name;
@@ -17,6 +23,7 @@ namespace Engine {
 
     struct MaterialCreateInfo {
         std::string name;
+        MaterialType type;
         TextureUse use;
         Texture* texture;
         glm::vec4 diffuse_color;
@@ -31,9 +38,10 @@ namespace Engine {
     class Material {
         public:
             Material(MaterialCreateInfo& info);
-            ~Material();
+            virtual ~Material();
 
             std::string& GetName() { return name; };
+            MaterialType GetType() { return type; };
             u32 GetId() { return id; };
             u32 GetInternalId() { return interanal_id; };
             u32 GetGeneration() { return generation; };
@@ -46,6 +54,7 @@ namespace Engine {
 
         protected:
             std::string name;
+            MaterialType type;
             u32 id;
             u32 generation;
             u32 interanal_id;
