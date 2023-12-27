@@ -9,16 +9,18 @@
 
 namespace Engine {
 
-    void VulkanRendererBackend::UploadDataRange(VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, u64 offset, u64 size, void* data) {
+    FreelistNode* VulkanRendererBackend::UploadDataRange(VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, u64 size, void* data) {
         // Create a host-visible staging buffer to upload to. Mark it as the source of the transfer.
         VkBufferUsageFlags flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        VulkanBuffer staging = VulkanBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, flags, true);
+        VulkanBuffer staging = VulkanBuffer(size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, flags, true, false);
 
         // Load the data into the staging buffer.
         staging.LoadData(0, size, 0, data);
 
         // Perform the copy from staging to the device local buffer.
-        staging.CopyTo(pool, fence, queue, 0, buffer->handle, offset, size);
+        FreelistNode* allocation = buffer->Allocate(size);
+        staging.CopyTo(pool, fence, queue, 0, buffer->handle, allocation->GetMemoryOffset(), allocation->GetSize());
+        return allocation;
     }
 
     void VulkanRendererBackend::FreeDataRange(VulkanBuffer* buffer, u64 offset, u64 size) {
@@ -54,8 +56,6 @@ namespace Engine {
     VulkanRendererBackend::VulkanRendererBackend(RendererSetup setup) : RendererBackend(setup) {
         object_vertex_buffer = nullptr;
         object_index_buffer = nullptr;
-        material_shader = nullptr;
-        ui_shader = nullptr;
         allocator = nullptr;
         device = nullptr;
         swapchain = nullptr;
@@ -145,9 +145,9 @@ namespace Engine {
             DEBUG("Creating Vulkan debugger...");
 
             u32 log_severity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
-                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT; //|
-                            // VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-                            // VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;   
+                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT;   
 
             VkDebugUtilsMessengerCreateInfoEXT debug_create_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT};
             debug_create_info.messageSeverity = log_severity;
@@ -202,22 +202,6 @@ namespace Engine {
         DEBUG("Creating sync objects...");
         CreateSyncObjects();
 
-        // Create material shader
-        DEBUG("Creating shader '%s' ...", BUILTIN_MATERIAL_SHADER_NAME);
-        material_shader = new VulkanMaterialShader(BUILTIN_MATERIAL_SHADER_NAME);
-        if (!material_shader->ready) {
-            ERROR("Error when creating default material shader...");
-            return false;
-        }
-
-        // Create UI shader
-        DEBUG("Creating shader '%s' ...", BUILTIN_UI_SHADER_NAME);
-        ui_shader = new VulkanUIShader(BUILTIN_UI_SHADER_NAME);
-        if (!ui_shader->ready) {
-            ERROR("Error when creating default UI shader...");
-            return false;
-        }
-
         // Buffers
         DEBUG("Creating buffers...");
         CreateBuffers();
@@ -238,8 +222,6 @@ namespace Engine {
         
         // Destroy shader module
         DEBUG("Destroying Vulkan shader modules...");
-        delete material_shader;
-        delete ui_shader;
 
         // Destroy sync objects
         DEBUG("Destroying Vulkan sync objects...");
@@ -378,16 +360,6 @@ namespace Engine {
         }
 
         renderpass->Begin(command_buffer, framebuffer);
-
-        switch (renderpass_id) {
-            case (u8)BuiltinRenderpasses::WORLD: {
-                material_shader->Use();
-            } break;
-
-            case (u8)BuiltinRenderpasses::UI: {
-                ui_shader->Use();
-            } break;
-        }
 
         return true;
     };
@@ -574,7 +546,8 @@ namespace Engine {
             VulkanRenderPassClearFlag::CLEAR_COLOR_DEPTH_BUFER | 
             VulkanRenderPassClearFlag::CLEAR_COLOR_STENCIL_BUFFER,
             false, true); // HasPrevPass, HasNextPass 
-
+        // std:string buffer = WORLD_RENDERPASS_NAME;
+        // renderpasses[buffer] = 
         // UI Renderpass
         ui_renderpass = new VulkanRenderpass(
             "UIRenderpass",
@@ -684,7 +657,7 @@ namespace Engine {
         object_vertex_buffer = new VulkanBuffer(
             vertex_buffer_size,
             (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
-            memory_property_flags, true);
+            memory_property_flags, true, true);
 
         if (!object_vertex_buffer->ready) {
             ERROR("Failed to create object_vertex_buffer ... ");
@@ -696,16 +669,12 @@ namespace Engine {
         object_index_buffer = new VulkanBuffer(
             index_buffer_size,
             (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
-            memory_property_flags, true);
+            memory_property_flags, true, true);
 
         if (!object_index_buffer->ready) {
             ERROR("Failed to create object_index_buffer ... ");
             return false;
         }
-
-        // Create freelists for buffers
-        vertex_buffer_freelist = new Freelist(vertex_buffer_size);
-        index_buffer_freelist = new Freelist(index_buffer_size);
 
         DEBUG("Vulkan buffers created successfully.");
         return true;
@@ -719,33 +688,8 @@ namespace Engine {
         if (object_index_buffer) {
             delete object_index_buffer;
         }
-        if (vertex_buffer_freelist) {
-            delete vertex_buffer_freelist;
-        }
-        if (index_buffer_freelist) {
-            delete index_buffer_freelist;
-        }
     };
-
-
-    b8 VulkanRendererBackend::UpdateGlobalWorldState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_color, i32 mode) {
-        material_shader->global_ubo.projection = projection;
-        material_shader->global_ubo.view = view;
-
-        material_shader->UpdateGlobalState();
-        
-        return true;
-    };  
-
-    b8 VulkanRendererBackend::UpdateGlobalUIState(glm::mat4 projection, glm::mat4 view, i32 mode) {
-        ui_shader->global_ubo.projection = projection;
-        ui_shader->global_ubo.view = view;
-
-        ui_shader->UpdateGlobalState();
-        
-        return true;
-    };
-
+    
     void VulkanRendererBackend::DrawGeometry(GeometryRenderData data) {
         if (!data.geometry || data.geometry->GetInternalId() == INVALID_ID) {
             return;
@@ -755,20 +699,20 @@ namespace Engine {
 
         Material* material = data.geometry->GetMaterial();
 
-        switch (material->GetType())
-        {
-            case MaterialType::WORLD: {
-                material_shader->UseModel(data.model);
-                material_shader->UseMaterial(material);
-            } break;
-            case MaterialType::UI: {
-                ui_shader->UseModel(data.model);
-                ui_shader->UseMaterial(material);
-            } break;
-            default:
-                ERROR("VulkanRendererBackend::DrawGeometry - Unknown material type used...");
-                return;
-        }
+        // switch (material->GetType())
+        // {
+        //     case MaterialType::WORLD: {
+        //         material_shader->UseModel(data.model);
+        //         material_shader->UseMaterial(material);
+        //     } break;
+        //     case MaterialType::UI: {
+        //         ui_shader->UseModel(data.model);
+        //         ui_shader->UseMaterial(material);
+        //     } break;
+        //     default:
+        //         ERROR("VulkanRendererBackend::DrawGeometry - Unknown material type used...");
+        //         return;
+        // }
 
         VkDeviceSize offsets[1] = {geometry->GetVertexBufferOffset()};
         vkCmdBindVertexBuffers(command_buffer->handle, 0, 1, &object_vertex_buffer->handle, (VkDeviceSize*)offsets);
@@ -794,21 +738,10 @@ namespace Engine {
 
     Material* VulkanRendererBackend::CreateMaterial(MaterialCreateInfo& info) {
         VulkanMaterial* material = new VulkanMaterial(info);
-        switch (material->GetType()) {
-            case MaterialType::WORLD: {
-                if (!material_shader->AcquireResources(material)) {
-                    ERROR("Unable to acquire resources for world material: '%s'", material->GetName().c_str());
-                };
-            } break;
-            case MaterialType::UI: {
-                if (!ui_shader->AcquireResources(material)) {
-                    ERROR("Unable to acquire resources for UI material: '%s'", material->GetName().c_str());
-                };
-            } break;
-            default:
-                ERROR("VulkanRendererBackend::CreateMaterial - Unknown material type");
-                return nullptr;
-        }
+        if (!material->AcquireInstanceResources()) {
+            ERROR("Unable to acquire resources for world material: '%s'", material->GetName().c_str());
+            delete material;
+        };
         return material;
     };
 
@@ -822,29 +755,28 @@ namespace Engine {
         
         create_info.vertex_count = info.vertex_count;
         create_info.vertex_size = info.vertex_element_size * info.vertex_count;
-        create_info.vertex_memory = vertex_buffer_freelist->AllocateBlock(create_info.vertex_size);
 
         create_info.index_count = info.index_count;
         create_info.index_size = info.index_element_size * info.index_count;
-        if (create_info.index_size > 0) {
-            create_info.index_memory = index_buffer_freelist->AllocateBlock(create_info.index_size);
-        }
         
-        VulkanGeometry* g = new VulkanGeometry(info, create_info);
 
-        UploadDataRange(
+
+        create_info.vertex_memory = UploadDataRange(
             device->graphics_command_pool, 
             0, device->graphics_queue, 
-            object_vertex_buffer, g->GetVertexBufferOffset(), 
-            g->GetVertexSize(), info.vertices);
+            object_vertex_buffer, 
+            create_info.vertex_size, info.vertices);  
+        
 
         if (info.indices) {
-            UploadDataRange(
+            create_info.index_memory = UploadDataRange(
                 device->graphics_command_pool, 
                 0, device->graphics_queue, 
-                object_index_buffer, g->GetIndexBufferOffset(), 
-                g->GetIndexSize(), info.indices);
+                object_index_buffer, 
+                create_info.vertex_size, info.indices);
         }
+
+        VulkanGeometry* g = new VulkanGeometry(info, create_info);
 
         g->UpdateGeneration();
 
@@ -859,17 +791,66 @@ namespace Engine {
         }
     };
 
-    void VulkanRendererBackend::ReleaseMaterial(VulkanMaterial* material) {
-        if (material) {
-            switch (material->GetType()) {
-                case MaterialType::WORLD: {
-                    material_shader->ReleaseResources(material);
-                } break;
-                case MaterialType::UI: {
-                    ui_shader->ReleaseResources(material);
-                } break;
+    Shader* VulkanRendererBackend::CreateShader(ShaderConfig& config) {
+        VulkanShaderConfig vk_config = {};
+        
+        vk_config.max_descriptor_set_count = 1024;
+        if (config.renderpass_name == "Renderpass.Builtin.World") {
+            vk_config.renderpass = world_renderpass;
+        } else if (config.renderpass_name == "Renderpass.Builtin.UI") {
+            vk_config.renderpass = ui_renderpass;
+        }
+        
+        
+        // HACK: не хорошо хардкоженые использовать
+        vk_config.pool_sizes.push_back((VkDescriptorPoolSize){VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1024});
+        vk_config.pool_sizes.push_back((VkDescriptorPoolSize){VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4096});
+
+        VulkanShaderDescrptorSetConfig global_descriptor = {};
+
+        VkDescriptorSetLayoutBinding global_ubo_binding = {};
+        global_ubo_binding.binding = (u32)VulkanShaderDescriptorBindingIndex::UBO;
+        global_ubo_binding.descriptorCount = 1;
+        global_ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        global_ubo_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        global_descriptor.bindings.push_back(global_ubo_binding);
+        global_descriptor.flags |= VulkanShaderDescriptorBindingFlags::UBO;
+        vk_config.descriptor_sets[(u32)ShaderScope::GLOBAL] = global_descriptor;
+
+        if (config.use_instances) {
+            VulkanShaderDescrptorSetConfig instance_descriptor = {};
+
+            VkDescriptorSetLayoutBinding instance_ubo_binding = {};
+            instance_ubo_binding.binding = (u32)VulkanShaderDescriptorBindingIndex::UBO;
+            instance_ubo_binding.descriptorCount = 1;
+            instance_ubo_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            instance_ubo_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            instance_descriptor.bindings.push_back(instance_ubo_binding);
+            instance_descriptor.flags |= VulkanShaderDescriptorBindingFlags::UBO;
+            vk_config.descriptor_sets[(u32)ShaderScope::INSTANCE] = instance_descriptor;
+        }
+
+        for (u32 i =  0; i < config.uniforms.size(); ++i) {
+            if (config.uniforms[i].type == ShaderUniformType::SAMPLER) {
+                VulkanShaderDescrptorSetConfig* descriptor_config = &vk_config.descriptor_sets[(u32)config.uniforms[i].scope];
+                if (*descriptor_config != 0 && !(descriptor_config->flags & VulkanShaderDescriptorBindingFlags::SAMPLER)) {
+                    VkDescriptorSetLayoutBinding sampler_binding = {};
+                    sampler_binding.binding = (u32)VulkanShaderDescriptorBindingIndex::SAMPLER;
+                    sampler_binding.descriptorCount = 1;
+                    sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                    sampler_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+                    descriptor_config->bindings.push_back(sampler_binding);
+                    descriptor_config->flags |= VulkanShaderDescriptorBindingFlags::SAMPLER;
+                } else {
+                    descriptor_config->bindings[(u32)VulkanShaderDescriptorBindingIndex::SAMPLER].descriptorCount++;
+                }
             }
         }
+
+        return new VulkanShader(vk_config, config);
     };
+
 
 };  

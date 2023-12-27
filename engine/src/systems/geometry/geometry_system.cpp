@@ -91,56 +91,55 @@ namespace Engine {
         create_info.indices = indices.data();
         create_info.index_count = indices.size();
         create_info.index_element_size = sizeof(u32);
-        create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial(MaterialType::WORLD);
+        create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial();
         default_geometry = RendererFrontend::GetInstance()->CreateGeometry(create_info);
         if (!default_geometry) {
             ERROR("Error occured during creating default 3d geometry.");
         }
 
-        std::vector<Vertex2D> ui_verts(4);
+        // std::vector<Vertex2D> ui_verts(4);
     
-        ui_verts[0].position.x = -0.5 * f;  // 0    3
-        ui_verts[0].position.y = -0.5 * f;  //
-        ui_verts[0].texcoord.x = 0.0f;      //
-        ui_verts[0].texcoord.y = 0.0f;      // 2    1
+        // ui_verts[0].position.x = -0.5 * f;  // 0    3
+        // ui_verts[0].position.y = -0.5 * f;  //
+        // ui_verts[0].texcoord.x = 0.0f;      //
+        // ui_verts[0].texcoord.y = 0.0f;      // 2    1
 
-        ui_verts[1].position.y = 0.5 * f;
-        ui_verts[1].position.x = 0.5 * f;
-        ui_verts[1].texcoord.x = 1.0f;
-        ui_verts[1].texcoord.y = 1.0f;
+        // ui_verts[1].position.y = 0.5 * f;
+        // ui_verts[1].position.x = 0.5 * f;
+        // ui_verts[1].texcoord.x = 1.0f;
+        // ui_verts[1].texcoord.y = 1.0f;
 
-        ui_verts[2].position.x = -0.5 * f;
-        ui_verts[2].position.y = 0.5 * f;
-        ui_verts[2].texcoord.x = 0.0f;
-        ui_verts[2].texcoord.y = 1.0f;
+        // ui_verts[2].position.x = -0.5 * f;
+        // ui_verts[2].position.y = 0.5 * f;
+        // ui_verts[2].texcoord.x = 0.0f;
+        // ui_verts[2].texcoord.y = 1.0f;
 
-        ui_verts[3].position.x = 0.5 * f;
-        ui_verts[3].position.y = -0.5 * f;
-        ui_verts[3].texcoord.x = 1.0f;
-        ui_verts[3].texcoord.y = 0.0f;
+        // ui_verts[3].position.x = 0.5 * f;
+        // ui_verts[3].position.y = -0.5 * f;
+        // ui_verts[3].texcoord.x = 1.0f;
+        // ui_verts[3].texcoord.y = 0.0f;
 
-        const u32 ui_index_count = 6;
-        std::vector<u32> ui_indices = {2, 1, 0, 3, 0, 1};
+        // const u32 ui_index_count = 6;
+        // std::vector<u32> ui_indices = {2, 1, 0, 3, 0, 1};
 
-        GeometryCreateInfo ui_create_info;
-        ui_create_info.id = 0;
-        ui_create_info.vertices = ui_verts.data();
-        ui_create_info.vertex_count = ui_verts.size();
-        ui_create_info.vertex_element_size = sizeof(Vertex2D);
-        ui_create_info.indices = ui_indices.data();
-        ui_create_info.index_count = ui_indices.size();
-        ui_create_info.index_element_size = sizeof(u32);
-        ui_create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial(MaterialType::WORLD);
-        default_ui_geometry = RendererFrontend::GetInstance()->CreateGeometry(ui_create_info);
-        if (!default_geometry) {
-            ERROR("Error occured during creating default 2d geometry.");
-        }
+        // GeometryCreateInfo ui_create_info;
+        // ui_create_info.id = 0;
+        // ui_create_info.vertices = ui_verts.data();
+        // ui_create_info.vertex_count = ui_verts.size();
+        // ui_create_info.vertex_element_size = sizeof(Vertex2D);
+        // ui_create_info.indices = ui_indices.data();
+        // ui_create_info.index_count = ui_indices.size();
+        // ui_create_info.index_element_size = sizeof(u32);
+        // ui_create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial();
+        // default_ui_geometry = RendererFrontend::GetInstance()->CreateGeometry(ui_create_info);
+        // if (!default_geometry) {
+        //     ERROR("Error occured during creating default 2d geometry.");
+        // }
 
     };
 
     void GeometrySystem::DestroyDefaultGeometries() {
         delete default_geometry;
-        delete default_ui_geometry;
     };
 
     u32 GeometrySystem::GetNewGeometryId() {
@@ -168,7 +167,7 @@ namespace Engine {
         create_info.material = MaterialSystem::GetInstance()->AcquireMaterial(config.material_name);
         if (!create_info.material) {
             WARN("Unable to acquire material '%s' for geometry '%s'. Swapping to default.", config.material_name.c_str(), config.name.c_str());
-            create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial(MaterialType::WORLD);
+            create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial();
         }
         create_info.name = config.name;
 

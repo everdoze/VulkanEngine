@@ -39,6 +39,6 @@ namespace Engine {
     std::string& Trim(std::string& str, const char* t = DEFAULT_TRIM_VALUE);
 
     std::pair<std::string, std::string> MidString(std::string& str, const char& separator);
-
+    std::vector<std::string> SplitString(std::string& str, const char& delimiter);
 };
 

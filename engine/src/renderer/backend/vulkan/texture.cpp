@@ -19,7 +19,7 @@ namespace Engine {
         VkMemoryPropertyFlags memory_prop_flags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         VulkanBuffer buffer = VulkanBuffer(
             image_size, usage,
-            memory_prop_flags, true);
+            memory_prop_flags, true, false);
 
         buffer.LoadData(0, image_size, 0, info.pixels);
 

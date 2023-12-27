@@ -8,6 +8,7 @@
 #include "systems/material/material_system.hpp"
 #include "systems/geometry/geometry_system.hpp"
 #include "systems/resource/resource_system.hpp"
+#include "systems/shader/shader_system.hpp"
 
 #include "platform/filesystem.hpp"
 
@@ -90,113 +91,125 @@ namespace Engine {
 
         Logger::Initialize();
 
-        if (!InputSystem::Initialize()) {
-            SetReady(false);
-            FATAL("Error during InputSystem initialization.");
-            return;
-        }
+        try {
+            if (!InputSystem::Initialize()) {
+                SetReady(false);
+                FATAL("Error during InputSystem initialization.");
+                return;
+            }
+            
+            if (!EventSystem::Initialize()) {
+                SetReady(false);
+                FATAL("Error during EventSystem initialization.");
+                return;
+            }
+
+            // Events registration
+            RegisterEvents();
+            
+            if (!Platform::Initialize(setup.name, setup.start_x, setup.start_y, setup.width, setup.height)) {
+                SetReady(false);
+                FATAL("Error during Platform initialization.");
+                return;
+            }
+
+            if (!ResourceSystem::Initialize("../assets")) {
+                SetReady(false);
+                FATAL("Error during ResourceSystem initialization.");
+                return;
+            }
+
+            if (!ShaderSystem::Initialize()) {
+                SetReady(false);
+                FATAL("Error during ShaderSystem initialization.");
+                return;
+            }
+
+            RendererSetup renderer_setup;
+            renderer_setup.height = setup.height;
+            renderer_setup.width = setup.width;
+            renderer_setup.name = setup.name;
+            if (!RendererFrontend::Initialize(renderer_setup, RendererBackendType::VULKAN)) {
+                SetReady(false);
+                FATAL("Error during Renderer initialization.");
+                return;
+            }
+
+            if (!TextureSystem::Initialize()) {
+                SetReady(false);
+                FATAL("Error during TextureSystem initialization.");
+                return;
+            }
+
+            if (!MaterialSystem::Initialize()) {
+                SetReady(false);
+                FATAL("Error during MaterialSystem initialization.");
+                return;
+            }
+
+            if (!GeometrySystem::Initialize()) {
+                SetReady(false);
+                FATAL("Error during GeometrySystem initialization.")
+            }
+            
+            // TODO: temp
+            GeometrySystem* gs = GeometrySystem::GetInstance();
+            GeometryConfig g_config = gs->GeneratePlainConfig(10.0f, 10.0f, 5, 5, 20.0f, 20.0f, "test_geometry", "test");
+            test_geometry = gs->AcquireGeometryFromConfig(g_config, true);
+
+            Platform::FMemory(g_config.indices); 
+            Platform::FMemory(g_config.vertices); 
+
+            // Load up some test UI geometry.
+            GeometryConfig ui_config;
+            ui_config.vertex_size = sizeof(Vertex2D);
+            ui_config.vertex_count = 4;
+            ui_config.index_size = sizeof(u32);
+            ui_config.index_count = 6;
+            ui_config.material_name = "test_ui";
+            ui_config.name = "test_ui_geometry";
+
+            const f32 f = 256.0f;
+            std::vector<Vertex2D> uiverts(4);
+            uiverts[0].position.x = 0.0f;  // 0    3
+            uiverts[0].position.y = 0.0f;  //
+            uiverts[0].texcoord.x = 0.0f;  //
+            uiverts[0].texcoord.y = 0.0f;  // 2    1
+
+            uiverts[1].position.y = f;
+            uiverts[1].position.x = f;
+            uiverts[1].texcoord.x = 1.0f;
+            uiverts[1].texcoord.y = 1.0f;
+
+            uiverts[2].position.x = 0.0f;
+            uiverts[2].position.y = f;
+            uiverts[2].texcoord.x = 0.0f;
+            uiverts[2].texcoord.y = 1.0f;
+
+            uiverts[3].position.x = f;
+            uiverts[3].position.y = 0.0;
+            uiverts[3].texcoord.x = 1.0f;
+            uiverts[3].texcoord.y = 0.0f;
+            ui_config.vertices = uiverts.data();
+
+            // Indices - counter-clockwise
+            u32 uiindices[6] = {2, 1, 0, 3, 0, 1};
+            ui_config.indices = uiindices;
+
+            // Get UI geometry from config.
+            test_ui_geometry = gs->AcquireGeometryFromConfig(ui_config, true);
+            
+            // TODO: temp
+
+            SetReady(true);
+            DEBUG("Application successfully initialized.");
         
-        if (!EventSystem::Initialize()) {
+        } catch (std::exception& ex) {
+            ERROR("Application::Application - %s", ex.what());
             SetReady(false);
-            FATAL("Error during EventSystem initialization.");
-            return;
-        }
-
-        // Events registration
-        RegisterEvents();
-        
-        if (!Platform::Initialize(setup.name, setup.start_x, setup.start_y, setup.width, setup.height)) {
+        } catch (...) {
             SetReady(false);
-            FATAL("Error during Platform initialization.");
-            return;
         }
-
-        if (!ResourceSystem::Initialize("../assets")) {
-            SetReady(false);
-            FATAL("Error during ResourceSystem initialization.");
-            return;
-        }
-        
-        RendererSetup renderer_setup;
-        renderer_setup.height = setup.height;
-        renderer_setup.width = setup.width;
-        renderer_setup.name = setup.name;
-        if (!RendererFrontend::Initialize(renderer_setup, RendererBackendType::VULKAN)) {
-            SetReady(false);
-            FATAL("Error during Renderer initialization.");
-            return;
-        }
-
-        if (!TextureSystem::Initialize()) {
-            SetReady(false);
-            FATAL("Error during TextureSystem initialization.");
-            return;
-        }
-
-        if (!MaterialSystem::Initialize()) {
-            SetReady(false);
-            FATAL("Error during MaterialSystem initialization.");
-            return;
-        }
-
-        if (!GeometrySystem::Initialize()) {
-            SetReady(false);
-            FATAL("Error during GeometrySystem initialization.")
-        }
-        
-        // TODO: temp
-        GeometrySystem* gs = GeometrySystem::GetInstance();
-        GeometryConfig g_config = gs->GeneratePlainConfig(10.0f, 10.0f, 5, 5, 20.0f, 20.0f, "test_geometry", "test");
-        test_geometry = gs->AcquireGeometryFromConfig(g_config, true);
-
-        Platform::FMemory(g_config.indices); 
-        Platform::FMemory(g_config.vertices); 
-
-        // Load up some test UI geometry.
-        GeometryConfig ui_config;
-        ui_config.vertex_size = sizeof(Vertex2D);
-        ui_config.vertex_count = 4;
-        ui_config.index_size = sizeof(u32);
-        ui_config.index_count = 6;
-        ui_config.material_name = "test_ui";
-        ui_config.name = "test_ui_geometry";
-
-        const f32 f = 256.0f;
-        std::vector<Vertex2D> uiverts(4);
-        uiverts[0].position.x = 0.0f;  // 0    3
-        uiverts[0].position.y = 0.0f;  //
-        uiverts[0].texcoord.x = 0.0f;  //
-        uiverts[0].texcoord.y = 0.0f;  // 2    1
-
-        uiverts[1].position.y = f;
-        uiverts[1].position.x = f;
-        uiverts[1].texcoord.x = 1.0f;
-        uiverts[1].texcoord.y = 1.0f;
-
-        uiverts[2].position.x = 0.0f;
-        uiverts[2].position.y = f;
-        uiverts[2].texcoord.x = 0.0f;
-        uiverts[2].texcoord.y = 1.0f;
-
-        uiverts[3].position.x = f;
-        uiverts[3].position.y = 0.0;
-        uiverts[3].texcoord.x = 1.0f;
-        uiverts[3].texcoord.y = 0.0f;
-        ui_config.vertices = uiverts.data();
-
-        // Indices - counter-clockwise
-        u32 uiindices[6] = {2, 1, 0, 3, 0, 1};
-        ui_config.indices = uiindices;
-
-        // Get UI geometry from config.
-        test_ui_geometry = gs->AcquireGeometryFromConfig(ui_config, true);
-
-
-        // test_geometry = GeometrySystem::GetInstance()->GetDefaultGeometry();
-        // TODO: temp
-
-        SetReady(true);
-        DEBUG("Application successfully initialized.");
     };
 
     void Application::SetReady(b8 value) {
@@ -290,6 +303,7 @@ namespace Engine {
 
         GeometrySystem::Shutdown();
         TextureSystem::Shutdown();
+        ShaderSystem::Shutdown();
         RendererFrontend::Shutdown();
         EventSystem::Shutdown();
         ResourceSystem::Shutdown();

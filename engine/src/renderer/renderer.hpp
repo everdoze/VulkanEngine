@@ -5,6 +5,7 @@
 #include "resources/texture/texture.hpp"
 #include "resources/material/material.hpp"
 #include "resources/geometry/geometry.hpp"
+#include "resources/shader/shader.hpp"
 #include "renderer_types.inl"
 
 namespace Engine {
@@ -40,8 +41,6 @@ namespace Engine {
             virtual void Resized(u16 width, u16 height) = 0;
             virtual b8 BeginFrame(f32 delta_time) = 0;
             virtual b8 EndFrame(f32 delta_time) = 0;
-            virtual b8 UpdateGlobalWorldState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_colour, i32 mode) = 0;
-            virtual b8 UpdateGlobalUIState(glm::mat4 projection, glm::mat4 view, i32 mode) = 0;
             virtual void DrawGeometry(GeometryRenderData data) = 0;
 
             u32 GetFrameWidth() { return width; };
@@ -50,6 +49,7 @@ namespace Engine {
             virtual Texture* CreateTexture(TextureCreateInfo& info) = 0;
             virtual Material* CreateMaterial(MaterialCreateInfo& info) = 0;
             virtual Geometry* CreateGeometry(GeometryCreateInfo& info) = 0;
+            virtual Shader* CreateShader(ShaderConfig& config) = 0;
 
         protected:
             std::string name;
@@ -76,10 +76,11 @@ namespace Engine {
             Texture* CreateTexture(TextureCreateInfo& info);
             Material* CreateMaterial(MaterialCreateInfo& info);
             Geometry* CreateGeometry(GeometryCreateInfo& info);
+            Shader* CreateShader(ShaderConfig& config);
         private:
             b8 BeginFrame(f32 delta_time);
             b8 EndFrame(f32 delta_time);
-            b8 UpdateGlobalState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_colour, i32 mode);
+            // b8 UpdateGlobalState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_colour, i32 mode);
             void DrawGeometry(GeometryRenderData data);
 
             void InitializeRenderer();

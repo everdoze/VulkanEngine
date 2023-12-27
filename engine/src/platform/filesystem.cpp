@@ -93,4 +93,13 @@ namespace Engine {
         delete file;
     };
 
+    tinyxml2::XMLDocument* FileSystem::OpenXml(std::string path) {
+        tinyxml2::XMLDocument* doc = new tinyxml2::XMLDocument();
+        doc->LoadFile(path.c_str());
+        return doc;
+    };
+
+    void FileSystem::CloseXml(tinyxml2::XMLDocument* file) {
+        delete file;
+    };
 };

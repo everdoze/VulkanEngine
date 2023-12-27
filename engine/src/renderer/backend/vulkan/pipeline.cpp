@@ -15,6 +15,8 @@ namespace Engine {
         VkDescriptorSetLayout* descriptors_set_layouts,
         u32 stage_count,
         VkPipelineShaderStageCreateInfo* stages,
+        u32 push_constant_range_count,
+        MemoryRange* push_constant_ranges,
         u32 stride,
         VkViewport viewport, 
         VkRect2D scissor,
@@ -120,13 +122,27 @@ namespace Engine {
 
 
         // Push constants
-        VkPushConstantRange push_constant;
-        push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-        push_constant.offset = sizeof(glm::mat4) * 0;
-        push_constant.size = sizeof(glm::mat4) * 2;
+        if (push_constant_range_count > 0) {
+            if (push_constant_range_count > 32) {
+                ERROR("VulkanPipeline::VulkanPipeline - cannot have more than 32 push constant ranges. Passed count: %i", push_constant_range_count);
+                return;
+            }
 
-        pipeline_layout_create_info.pushConstantRangeCount = 1;
-        pipeline_layout_create_info.pPushConstantRanges = &push_constant;
+            // NOTE: 32 is the max number of ranges we can ever have, since spec only guarantees 128 bytes with 4-byte alignment.
+            VkPushConstantRange push_constants[32];
+            Platform::ZMemory(push_constants, sizeof(VkPushConstantRange) * 32);
+            for (u32 i = 0; i < push_constant_range_count; ++i) {
+                push_constants[i].offset = push_constant_ranges[i].offset;
+                push_constants[i].size = push_constant_ranges[i].size;
+                push_constants[i].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+                
+            }
+            pipeline_layout_create_info.pushConstantRangeCount = push_constant_range_count;
+            pipeline_layout_create_info.pPushConstantRanges = push_constants;
+        } else {
+            pipeline_layout_create_info.pushConstantRangeCount = 0;
+            pipeline_layout_create_info.pPushConstantRanges = nullptr;
+        }
 
         pipeline_layout_create_info.setLayoutCount = descriptor_set_layout_count;
         pipeline_layout_create_info.pSetLayouts = descriptors_set_layouts;

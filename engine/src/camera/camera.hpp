@@ -38,6 +38,12 @@ namespace Engine {
 
             b8 Test(EventType type, EventContext context);
 
+            glm::mat4 projection;
+            glm::mat4 view;
+
+            glm::mat4 ui_projection;
+            glm::mat4 ui_view;
+
         private:
             void GenerateProjectionMatrix();
             void GenerateViewMatrix();
@@ -47,12 +53,6 @@ namespace Engine {
 
             glm::vec3 camera_position = glm::vec3(0, 0, 30.0f);
             glm::vec3 camera_euler = glm::vec3(0, 0, 0);
-
-            glm::mat4 projection;
-            glm::mat4 view;
-
-            glm::mat4 ui_projection;
-            glm::mat4 ui_view;
 
             // TODO: Probably need to configurate these
             f32 near_clip = 0.1f;

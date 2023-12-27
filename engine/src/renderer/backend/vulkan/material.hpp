@@ -6,8 +6,11 @@ namespace Engine {
 
     class VulkanMaterial: public Material {
         public:
-            VulkanMaterial(MaterialCreateInfo& info) : Material(info) {};
+            VulkanMaterial(MaterialCreateInfo& info);
             ~VulkanMaterial();
+
+        protected:
+            class VulkanShader* vulkan_shader;
     };
 
 }

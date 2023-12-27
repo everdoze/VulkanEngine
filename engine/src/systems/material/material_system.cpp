@@ -6,17 +6,18 @@
 #include "core/utils/string.hpp"
 
 #include "systems/resource/resource_system.hpp"
+#include "systems/shader/shader_system.hpp"
 
 namespace Engine {
 
     MaterialSystem* MaterialSystem::instance = nullptr;
 
     MaterialSystem::MaterialSystem() {
-       CreateDefaultMaterials();
+       CreateDefaultMaterial();
     };
 
     MaterialSystem::~MaterialSystem() {
-        DestroyDefaultMaterials();
+        DestroyDefaultMaterial();
 
         for (auto& [key, material] : registered_materials) { 
             delete material;
@@ -25,28 +26,19 @@ namespace Engine {
         registered_materials.clear();
     };
 
-    void MaterialSystem::CreateDefaultMaterials() {
+    void MaterialSystem::CreateDefaultMaterial() {
         MaterialCreateInfo mat_create_info = {};
         mat_create_info.name = DEFAULT_MATERIAL_NAME;
         mat_create_info.diffuse_color = glm::vec4(1, 1, 1, 1);
         mat_create_info.use = TextureUse::MAP_DIFFUSE;
         mat_create_info.texture = TextureSystem::GetInstance()->GetDefaultTexture();
-        mat_create_info.type = MaterialType::WORLD;
+        mat_create_info.shader = ShaderSystem::GetInstance()->GetShader(BUILTIN_MATERIAL_SHADER_NAME);
 
         default_material = RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
-
-        mat_create_info.name = DEFAULT_MATERIAL_NAME;
-        mat_create_info.diffuse_color = glm::vec4(1, 1, 1, 1);
-        mat_create_info.use = TextureUse::MAP_DIFFUSE;
-        mat_create_info.texture = TextureSystem::GetInstance()->GetDefaultTexture();
-        mat_create_info.type = MaterialType::UI;
-
-        default_ui_material = RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
     };
 
-    void MaterialSystem::DestroyDefaultMaterials() {
+    void MaterialSystem::DestroyDefaultMaterial() {
         delete default_material;
-        delete default_ui_material;
     };
 
     b8 MaterialSystem::Initialize() {
@@ -66,6 +58,10 @@ namespace Engine {
     };
 
     Material* MaterialSystem::AcquireMaterial(std::string name) {
+        if (registered_materials[name]) {
+            return registered_materials[name];
+        }
+
         MaterialResource* resource = static_cast<MaterialResource*>(ResourceSystem::GetInstance()->LoadResource(ResourceType::MATERIAL, name));
         if (!resource) {
             ERROR("MaterialSystem::AcquireMaterial falied to load material '%s'", name.c_str());
@@ -73,12 +69,12 @@ namespace Engine {
         }
         MaterialConfig config = resource->GetConfig();
         delete resource;
-        return AcquireMaterialFromConfig(config);
+        return LoadMaterial(config);
     };
 
     Material* MaterialSystem::LoadMaterial(MaterialConfig& config) {
         MaterialCreateInfo mat_create_info = {};
-        mat_create_info.type = config.type;
+        mat_create_info.shader = ShaderSystem::GetInstance()->GetShader(config.shader_name);
         mat_create_info.name = config.name;
         mat_create_info.diffuse_color = config.diffuse_color;
 
@@ -96,7 +92,13 @@ namespace Engine {
             mat_create_info.use = TextureUse::UNKNOWN;
         }
 
-        return RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
+        Material* material = RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
+        if (material) {
+            material->AcquireInstanceResources();
+            return material;
+        }
+        delete material;
+        return nullptr;
     };
 
     Material* MaterialSystem::AcquireMaterialFromConfig(MaterialConfig& config) {
