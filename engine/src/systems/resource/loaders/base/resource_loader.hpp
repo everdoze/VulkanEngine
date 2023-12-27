@@ -7,13 +7,14 @@
 namespace Engine {
 
     enum class ResourceType {
-        UNKNOWN = 0,
-        TEXT = 1,
-        BINARY = 2,
-        IMAGE = 3,
-        MATERIAL = 4,
-        STATIC_MESH = 5,
-        CUSTOM = 6
+        UNKNOWN,
+        TEXT,
+        BINARY,
+        IMAGE,
+        MATERIAL,
+        STATIC_MESH,
+        SHADER,
+        CUSTOM
     };
 
     class ResourceLoader {

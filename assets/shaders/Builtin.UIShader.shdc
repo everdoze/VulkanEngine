@@ -1,0 +1,22 @@
+<Version>1.0</Version>
+<Shader 
+    name="Builtin.UIShader" 
+    renderpass="Renderpass.Builtin.UI" 
+    use_instances="true" 
+    use_local="true">
+    <Stages>
+        <Stage type="vertex" file="shaders/Builtin.UIShader.vert.spv"/>
+        <Stage type="fragment" file="shaders/Builtin.UIShader.frag.spv"/>
+    </Stages>
+    <Attributes>
+        <Attribute type="vec2" name="in_position" />
+        <Attribute type="vec2" name="in_texcoord" />
+    </Attributes>
+    <Uniforms>
+        <Uniform type="mat4" scope="global" name="projection"/>
+        <Uniform type="mat4" scope="global" name="view"/>
+        <Uniform type="vec4" scope="instance" name="diffuse_color"/>
+        <Uniform type="samp" scope="instance" name="diffuse_texture"/>
+        <Uniform type="mat4" scope="local" name="model"/>
+    </Uniforms>
+</Shader>

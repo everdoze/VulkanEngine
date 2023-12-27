@@ -4,6 +4,7 @@
 #include "loaders/image/image_loader.hpp"
 #include "loaders/material/material_loader.hpp"
 #include "loaders/binary/binary_loader.hpp"
+#include "loaders/shader/shader_loader.hpp"
 
 namespace Engine {
     
@@ -23,20 +24,27 @@ namespace Engine {
     };
 
     std::string ResourceSystem::CreateLoaderPath(std::string path) {
-        return StringFormat("%s/%s", base_path.c_str(), path.c_str());
+        return StringFormat("%s%s", base_path.c_str(), path.c_str());
+    };
+
+    std::string ResourceSystem::CreateLoaderPath() {
+        return base_path;
     };
 
     ResourceSystem::ResourceSystem(std::string base_path) {
         this->base_path = base_path;
 
         // Image loader
-        RegisterLoader(ResourceType::IMAGE, new ImageLoader(registered_loaders.size(), CreateLoaderPath("textures")));
+        RegisterLoader(ResourceType::IMAGE, new ImageLoader(registered_loaders.size(), CreateLoaderPath("/textures")));
 
         // Material loader
-        RegisterLoader(ResourceType::MATERIAL, new MaterialLoader(registered_loaders.size(), CreateLoaderPath("materials")));
+        RegisterLoader(ResourceType::MATERIAL, new MaterialLoader(registered_loaders.size(), CreateLoaderPath("/materials")));
 
         // Binary loader
-        RegisterLoader(ResourceType::BINARY, new BinaryLoader(registered_loaders.size(), CreateLoaderPath("shaders")));
+        RegisterLoader(ResourceType::BINARY, new BinaryLoader(registered_loaders.size(), CreateLoaderPath()));
+
+        // Shader loader
+        RegisterLoader(ResourceType::SHADER, new ShaderLoader(registered_loaders.size(), CreateLoaderPath("/shaders")));
     };  
 
     ResourceSystem::~ResourceSystem() {

@@ -45,6 +45,7 @@ namespace Engine {
         protected:
             std::string name;
             u32 id;
+            u32 internal_id;
             u32 width;
             u32 height;
             u8 channel_count;

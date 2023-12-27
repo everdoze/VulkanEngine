@@ -20,6 +20,8 @@ namespace Engine {
                 VkDescriptorSetLayout* descriptors_set_layouts,
                 u32 stage_count,
                 VkPipelineShaderStageCreateInfo* stages,
+                u32 push_constant_range_count,
+                MemoryRange* push_constant_ranges,
                 u32 stride,
                 VkViewport viewport, 
                 VkRect2D scissor,

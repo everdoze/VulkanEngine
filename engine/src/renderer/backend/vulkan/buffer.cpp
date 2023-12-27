@@ -11,7 +11,8 @@ namespace Engine {
         u64 size,
         VkBufferUsageFlagBits usage,
         VkMemoryPropertyFlags memory_property_flags,
-        b8 bind_on_create) {
+        b8 bind_on_create,
+        b8 use_freelist) {
         
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
 
@@ -39,6 +40,11 @@ namespace Engine {
             ready = false;
             return;
         }
+        
+        if (use_freelist) {
+            freelist = new Freelist(total_size);
+        }
+        
 
         VkMemoryAllocateInfo allocate_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
         allocate_info.allocationSize = requirements.size;
@@ -184,7 +190,28 @@ namespace Engine {
             this->memory);
         };
 
-    void VulkanBuffer::LoadData(u64 offset, u64 size, u32 flags, const void* data) {
+    FreelistNode* VulkanBuffer::LoadData(u64 size, u32 flags, const void* data) {
+        if (!freelist) {
+            return nullptr;
+        }
+        FreelistNode* node = freelist->AllocateBlock(size);
+        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        void* data_ptr;
+        VK_CHECK(vkMapMemory(
+            backend->GetVulkanDevice()->logical_device,
+            this->memory, 
+            node->GetMemoryOffset(),
+            node->GetSize(),
+            flags,
+            &data_ptr));
+        Platform::CMemory(data_ptr, data, size);
+        vkUnmapMemory(
+            backend->GetVulkanDevice()->logical_device,
+            this->memory);
+        return node;
+    };
+
+    b8 VulkanBuffer::LoadData(u64 offset, u64 size, u32 flags, const void* data) {
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
         void* data_ptr;
         VK_CHECK(vkMapMemory(
@@ -198,6 +225,14 @@ namespace Engine {
         vkUnmapMemory(
             backend->GetVulkanDevice()->logical_device,
             this->memory);
+        return true;
+    };
+
+    FreelistNode* VulkanBuffer::Allocate(u64 size) {
+        if (!freelist) {
+            return nullptr;
+        }
+        return freelist->AllocateBlock(size);
     };
 
     void VulkanBuffer::CopyTo(
@@ -224,6 +259,16 @@ namespace Engine {
         vkCmdCopyBuffer(command_buffer.handle, handle, dest, 1, &copy_region);
 
         command_buffer.EndSingleUse(queue);
+    };
+
+    b8 VulkanBuffer::Free(u64 offset) {
+        if (!freelist) {
+            return false;
+        }
+        if (!freelist->FreeByOffset(offset)) {
+            return false;
+        }
+        return true;
     };
 
 };

@@ -5,6 +5,7 @@
 #include "platform/platform.hpp"
 #include "core/utils/string.hpp"
 
+#include "systems/shader/shader_system.hpp"
 // TODO: TEMP
 #include "systems/material/material_system.hpp"
 #include "core/event/event.hpp"
@@ -41,7 +42,9 @@ namespace Engine {
     };
     
     void RendererFrontend::InitializeRenderer() {
-        
+        ShaderSystem* shader_system = ShaderSystem::GetInstance();
+        Shader* material_shader = shader_system->CreateShader(BUILTIN_MATERIAL_SHADER_NAME);
+        Shader* ui_shader = shader_system->CreateShader(BUILTIN_UI_SHADER_NAME);
     };
 
     b8 RendererFrontend::CreateBackend(RendererSetup setup, RendererBackendType type) {
@@ -89,6 +92,7 @@ namespace Engine {
     
     b8 RendererFrontend::DrawFrame(RenderPacket* packet) {
         RendererFrontend* instance = RendererFrontend::GetInstance();
+        ShaderSystem* shader_system = ShaderSystem::GetInstance();
 
         if (instance->BeginFrame(packet->delta_time)) {
             
@@ -100,12 +104,28 @@ namespace Engine {
                 return false;
             }
 
-            instance->backend->UpdateGlobalWorldState(
-                instance->camera->GetProjectionMatrix(), 
-                instance->camera->GetViewMatrix(), 
-                glm::vec3(), glm::vec4(1), 0);
+            shader_system->UseShader(BUILTIN_MATERIAL_SHADER_NAME);
+
+            shader_system->ApplyGlobals(
+                BUILTIN_MATERIAL_SHADER_NAME,
+                &instance->camera->projection,
+                &instance->camera->view);
             
             for (u32 i = 0; i < packet->geometries.size(); ++i) {
+                if (!packet->geometries[i].geometry) {
+                    ERROR("RendererFrontend::DrawFrame - something wrong with geometry at packet->geometries[%i], skipping...", i);
+                    continue;
+                }
+                
+                Material* material = packet->geometries[i].geometry->GetMaterial();
+                if (!material) {
+                    material = MaterialSystem::GetInstance()->GetDefaultMaterial();
+                }
+
+                material->ApplyInstance();
+
+                material->ApplyLocal(&packet->geometries[i].model);
+
                 instance->backend->DrawGeometry(packet->geometries[i]);
             }
             
@@ -121,11 +141,28 @@ namespace Engine {
                 return false;
             }
 
-            instance->backend->UpdateGlobalUIState(
-                instance->camera->GetUIProjectionMatrix(),
-                instance->camera->GetUIViewMatrix(), 0);
+            shader_system->UseShader(BUILTIN_UI_SHADER_NAME);
+
+            shader_system->ApplyGlobals(
+                BUILTIN_UI_SHADER_NAME,
+                &instance->camera->ui_projection,
+                &instance->camera->ui_view);
 
             for (u32 i = 0; i < packet->ui_geometries.size(); ++i) {
+                if (!packet->ui_geometries[i].geometry) {
+                    ERROR("RendererFrontend::DrawFrame - something wrong with geometry at packet->ui_geometries[%i], skipping...", i);
+                    continue;
+                }
+
+                Material* material = packet->ui_geometries[i].geometry->GetMaterial();
+                if (!material) {
+                    material = MaterialSystem::GetInstance()->GetDefaultMaterial();
+                }
+
+                material->ApplyInstance();
+
+                material->ApplyLocal(&packet->ui_geometries[i].model);
+
                 instance->backend->DrawGeometry(packet->ui_geometries[i]);
             }
 
@@ -159,12 +196,12 @@ namespace Engine {
         return backend->EndFrame(delta_time);
     };
 
-    b8 RendererFrontend::UpdateGlobalState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_colour, i32 mode) {
-        if (!backend) {
-            return false;
-        }
-        return backend->UpdateGlobalWorldState(projection, view, view_position, ambient_colour, mode);
-    };
+    // b8 RendererFrontend::UpdateGlobalState(glm::mat4 projection, glm::mat4 view, glm::vec3 view_position, glm::vec4 ambient_colour, i32 mode) {
+    //     if (!backend) {
+    //         return false;
+    //     }
+    //     return backend->UpdateGlobalWorldState(projection, view, view_position, ambient_colour, mode);
+    // };
 
     void RendererFrontend::DrawGeometry(GeometryRenderData data) {
         if (!backend) {
@@ -195,6 +232,14 @@ namespace Engine {
             return nullptr;
         }
         return backend->CreateGeometry(info);
+    };
+
+
+    Shader* RendererFrontend::CreateShader(ShaderConfig& config)  {
+        if (!backend) {
+            return nullptr;
+        }
+        return backend->CreateShader(config);
     };
 
 };

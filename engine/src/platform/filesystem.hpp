@@ -3,6 +3,7 @@
 #include "defines.hpp"
 #include <fstream>
 #include <iostream>
+#include "vendor/tinyxml/tinyxml.hpp"
 
 namespace Engine {
 
@@ -24,6 +25,7 @@ namespace Engine {
             b8 WriteLine(std::string line);
 
             b8 IsReady() { return ready; };
+
         private:
             FileMode mode;
             b8 binary;
@@ -36,6 +38,8 @@ namespace Engine {
             static b8 FileExists(std::string path);
             static File* FileOpen(std::string path, FileMode mode, b8 binary);
             static void FileClose(File* file);
+            static tinyxml2::XMLDocument* OpenXml(std::string path);
+            static void CloseXml(tinyxml2::XMLDocument* file);
         private:
             FileSystem();
     };

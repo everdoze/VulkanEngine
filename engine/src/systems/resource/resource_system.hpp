@@ -8,6 +8,7 @@
 #include "systems/resource/resources/image/image_resource.hpp"
 #include "systems/resource/resources/material/material_resource.hpp"
 #include "systems/resource/resources/binary/binary_resource.hpp"
+#include "systems/resource/resources/shader/shader_resource.hpp"
 
 namespace Engine {
 
@@ -22,6 +23,7 @@ namespace Engine {
             static ResourceSystem* GetInstance() { return instance; };
             
             std::string CreateLoaderPath(std::string path);
+            std::string CreateLoaderPath();
 
             void RegisterLoader(ResourceType type, ResourceLoader* loader);
             void RegisterLoader(std::string type, ResourceLoader* loader);

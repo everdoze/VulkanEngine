@@ -3,20 +3,34 @@
 
 namespace Engine {
 
-    FreelistNode::FreelistNode(u32 offset, u32 size) {
-        this->prev = nullptr;
-        this->next = nullptr;
+    FreelistNode::FreelistNode(u64 offset, u64 size) {
+        this->Initialize();
         this->offset = offset;
         this->size = size;
-        this->is_free = true;
     };
 
-    FreelistNode::FreelistNode(u32 offset, u32 size, b8 is_free) {
-        this->prev = nullptr;
-        this->next = nullptr;
+    FreelistNode::FreelistNode(u64 offset, u64 size, b8 is_free) {
+        this->Initialize();
         this->offset = offset;
         this->size = size;
         this->is_free = is_free;
+    };
+
+    FreelistNode::FreelistNode(u64 offset, u64 size, b8 is_free, void* memory) {
+        this->Initialize();
+        this->offset = offset;
+        this->size = size;
+        this->is_free = is_free;
+        this->memory = memory;
+    };
+
+    void FreelistNode::Initialize() {
+        this->prev = nullptr;
+        this->next = nullptr;
+        this->offset = INVALID_ID;
+        this->size = 0;
+        this->is_free = true;
+        this->memory = nullptr;
     };
 
     void FreelistNode::FreeBlock() {
@@ -61,7 +75,7 @@ namespace Engine {
 
     b8 FreelistNode::InsertBefore(FreelistNode* node) {
         if (node) {
-            if (this->Previous()) {
+            if (this->prev) {
                 this->prev->next = node;
                 node->prev = this->prev;
                 node->next = this;
@@ -82,6 +96,20 @@ namespace Engine {
         }
         return false;
     };
+
+    void FreelistNode::InsertAfter(FreelistNode* node) {
+        if (node) {
+            if (this->next) {
+                node->prev = this;
+                node->next = this->next;
+                this->next->prev = node;
+                this->next = node;
+            } else {
+                node->prev = this;
+                this->next = node;
+            }
+        }
+    };
     
     FreelistNode::~FreelistNode() {
         this->prev = nullptr;
@@ -90,9 +118,14 @@ namespace Engine {
         this->offset = 0;
     };
 
-    Freelist::Freelist(u32 total_size) {
+    Freelist::Freelist(u64 total_size) {
         this->total_size = total_size;
         first_node = new FreelistNode(0, total_size);
+    };
+
+    Freelist::Freelist(u64 total_size, void* memory) {
+        this->total_size = total_size;
+        first_node = new FreelistNode(0, total_size, true, memory);
     };
 
     Freelist::~Freelist() {
@@ -108,11 +141,11 @@ namespace Engine {
     };
 
 
-    FreelistNode* Freelist::AllocateBlock(u32 size) {
+    FreelistNode* Freelist::AllocateBlock(u64 size) {
         FreelistNode* current = first_node;
         while (current) {
            if (current->IsFree()) {
-                if (current->GetSize() > size) {
+                if (current->GetSize() >= size) {
                     FreelistNode* occupied = new FreelistNode(current->GetMemoryOffset(), size, false);
                     current->offset += size;
                     current->size -= size;
@@ -125,12 +158,26 @@ namespace Engine {
            current = current->Next();
         }
 
-        u32 free_space = this->FreeSpace();
+        u64 free_space = this->FreeSpace();
         WARN("Freelist::AllocateBlock - not enougth memory to fit the request ( requested: %uB avaliable: %lluB ).", size, free_space);
         return nullptr;
     };
 
-    
+    b8  Freelist::FreeByOffset(u64 offset) {
+        FreelistNode* current = first_node;
+
+        while (current) {
+            if (current->offset == offset) {
+                current->FreeBlock();
+                return true;
+            }
+
+            current = current->next;
+        }
+
+        return false;
+    };
+
     void Freelist::Clear() {
         FreelistNode* next = first_node->Next();
         FreelistNode* buffer = next;
@@ -139,13 +186,13 @@ namespace Engine {
             delete buffer;
             buffer = next;
         }
-        first_node->SetNext(nullptr);
-        first_node->SetSize(this->total_size);
-        first_node->SetFree(true);
+        first_node->next = nullptr;
+        first_node->size = this->total_size;
+        first_node->is_free = true;
     };
 
-    u32 Freelist::FreeSpace() {
-        u32 free_space = total_size;
+    u64 Freelist::FreeSpace() {
+        u64 free_space = total_size;
         FreelistNode* node = first_node;
         while (node) {
             if (!node->IsFree()) {

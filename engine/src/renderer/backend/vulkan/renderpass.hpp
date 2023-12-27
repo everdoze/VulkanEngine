@@ -24,7 +24,6 @@ namespace Engine {
     };
 
     b8 operator&(const VulkanRenderPassClearFlag& value, const VulkanRenderPassClearFlag& operable);
-
     VulkanRenderPassClearFlag operator|(const VulkanRenderPassClearFlag& value, const VulkanRenderPassClearFlag& operable);
 
     class VulkanRenderpass {

@@ -7,7 +7,13 @@
 
 namespace Engine {
 
-    VulkanDevice::VulkanDevice() {};
+    VulkanDevice::VulkanDevice() {
+        Platform::ZMemory(&properties, sizeof(VkPhysicalDeviceProperties));
+        Platform::ZMemory(&features, sizeof(VkPhysicalDeviceFeatures));
+        Platform::ZMemory(&memory, sizeof(VkPhysicalDeviceMemoryProperties));
+        Platform::ZMemory(&logical_device, sizeof(VkDevice));
+        Platform::ZMemory(&physical_device, sizeof(VkPhysicalDevice));
+    };
 
     VulkanDevice::~VulkanDevice() {
         VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
@@ -85,6 +91,7 @@ namespace Engine {
         }
 
         VkDeviceQueueCreateInfo queues_create_infos[max_queue_count];
+        Platform::ZMemory(queues_create_infos, sizeof(VkDeviceQueueCreateInfo) * max_queue_count);
         for (u32 i = 0; i < index_count; ++i) {
             queues_create_infos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             queues_create_infos[i].queueFamilyIndex = indecies[i];
@@ -264,9 +271,9 @@ namespace Engine {
                 // NOTE: set compute index here if needed.
 
                 // Keep a copy of properties, features and memory info for later use.
-                properties = properties;
-                features = features;
-                memory = memory;
+                this->properties = properties;
+                this->features = features;
+                this->memory = memory;
                 supports_device_local_host_visible = supports_device_local_host_visible;
                 break;
             }

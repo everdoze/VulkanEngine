@@ -99,6 +99,16 @@ typedef bool b8;
 #define STATIC_ASSERT static_assert
 #endif
 
+struct MemoryRange {
+    u64 offset;
+    u64 size;
+};
+
+struct MemoryRange32 {
+    u32 offset;
+    u32 size;
+};
+
 STATIC_ASSERT(sizeof(u8) == 1, "Expected u8 to be 1 byte.");
 STATIC_ASSERT(sizeof(u16) == 2, "Expected u8 to be 2 bytes.");
 STATIC_ASSERT(sizeof(u32) == 4, "Expected u8 to be 4 bytes.");
@@ -176,3 +186,11 @@ STATIC_ASSERT(sizeof(f64) == 8, "Expected f64 to be 8 bytes.");
 #define INLINE_API static inline
 #define NOINLINE_API
 #endif 
+
+INLINE_API u64 GetAligned(u64 operand, u64 granularity) {
+    return ((operand + (granularity - 1)) & ~(granularity - 1));
+}
+
+INLINE_API MemoryRange GetAlignedMemory(u64 offset, u64 size, u64 granularity) {
+    return (MemoryRange){GetAligned(offset, granularity), GetAligned(size, granularity)};
+}

@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include "defines.hpp"
+#include "core/utils/freelist.hpp"
 
 namespace Engine {
 
@@ -14,6 +15,7 @@ namespace Engine {
             VkDeviceMemory memory;
             i32 memory_index;
             u32 memory_property_flags;
+            Freelist* freelist;
 
             b8 ready;
 
@@ -21,7 +23,8 @@ namespace Engine {
                 u64 size,
                 VkBufferUsageFlagBits usage,
                 VkMemoryPropertyFlags memory_property_flags,
-                b8 bind_on_create
+                b8 bind_on_create,
+                b8 use_freelist
             );
 
             ~VulkanBuffer();
@@ -33,7 +36,11 @@ namespace Engine {
             void* LockMemory(u64 offset, u64 size, u32 flags);
             void UnlockMemory();
 
-            void LoadData(u64 offset, u64 size, u32 flags, const void* data);
+            b8 LoadData(u64 offset, u64 size, u32 flags, const void* data);
+            FreelistNode* LoadData(u64 size, u32 flags, const void* data);
+
+            FreelistNode* Allocate(u64 size);
+            b8 Free(u64 offset);
 
             void CopyTo(
                 VkCommandPool pool,

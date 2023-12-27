@@ -3,6 +3,7 @@
 #include "defines.hpp"
 
 #include "resources/material/material.hpp"
+#include "systems/resource/resources/material/material_resource.hpp"
 
 namespace Engine {
     // TODO: AUTO_RELEASE usage
@@ -19,10 +20,12 @@ namespace Engine {
             void ReleaseMaterial(std::string name);
 
             Material* LoadMaterial(MaterialConfig& config);
-            Material* GetDefaultMaterial(MaterialType type) {return default_material; };
+            Material* GetDefaultMaterial() {return default_material; };
 
-            void CreateDefaultMaterials();
-            void DestroyDefaultMaterials();
+            
+
+            void CreateDefaultMaterial();
+            void DestroyDefaultMaterial();
 
             Material* AcquireMaterialFromConfig(MaterialConfig& config);
 
@@ -30,7 +33,6 @@ namespace Engine {
             static MaterialSystem* instance;
 
             Material* default_material;
-            Material* default_ui_material;
             std::unordered_map<std::string, Material*> registered_materials;
     };
 

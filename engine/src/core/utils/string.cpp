@@ -139,8 +139,13 @@ namespace Engine {
             return false;
         }
         std::string buffer = str;
-        std::transform(buffer.begin(), buffer.end(), buffer.begin(), [](unsigned char c){ return std::tolower(c); });
-        return str == "1" || buffer == "true";
+        std::transform(buffer.begin(), buffer.end(), buffer.begin(), [](u8 c){ return std::tolower(c); });
+        if ((str == "1" || buffer == "true")) {
+            *out_bool = true;
+            return true;
+        }
+        *out_bool = false;
+        return true;
     };
 
     std::string& RTrim(std::string& str, const char* t) {
@@ -165,6 +170,31 @@ namespace Engine {
             split_string.second = str.substr(pos+1, str.length() - (pos+1));
         }
         return split_string;
+    };
+
+    std::vector<std::string> SplitString(std::string& str, const char& delimiter) {
+        std::vector<std::string> strings;
+        u32 new_string_offset = 0;
+        for (u32 i = 0; i < str.size(); ++i) {
+            char c = str[i];
+
+            if (c == delimiter) {
+                std::string substring = str.substr(new_string_offset, i-1);
+                if (substring.size()) {
+                    strings.push_back(substring);
+                    new_string_offset = i + 1;
+                }
+                continue;
+            }
+
+            if (i+1 == str.size()) {
+                std::string substring = str.substr(new_string_offset, i);
+                strings.push_back(substring);
+                continue;
+            }
+            
+        } 
+        return strings;
     };
 
 };
