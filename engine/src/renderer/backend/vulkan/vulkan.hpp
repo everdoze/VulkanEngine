@@ -56,6 +56,7 @@ namespace Engine {
             void SetCurrentFrame(u32 index) { current_frame = index; };
             u32 GetCurrentFrame() { return current_frame; };
             void NextFrame() { current_frame = (current_frame + 1) % swapchain->max_frames_in_flight; };
+            u32 GetFrame() { return current_frame; };
             f32 GetDeltaTime() { return delta_time; };
 
             b8 Initialize();

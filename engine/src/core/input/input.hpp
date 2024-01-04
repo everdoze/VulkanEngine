@@ -171,6 +171,8 @@ namespace Engine {
 
     class ENGINE_API InputSystem {
         public:
+            InputSystem();
+
             static b8 Initialize();
             static void Shutdown();
 

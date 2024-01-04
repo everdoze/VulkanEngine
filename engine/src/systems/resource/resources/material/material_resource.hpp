@@ -12,13 +12,16 @@ namespace Engine {
         b8 auto_release;
         glm::vec4 diffuse_color;
         std::string diffuse_map_name;
+        std::string specular_map_name;
+        std::string normal_map_name;
+        f32 shininess;
     };
 
     class MaterialResource : public Resource {
         public:
             MaterialResource(
                 u32 loader_id, std::string name,
-                std::string full_path, MaterialConfig& config
+                std::string full_path, MaterialConfig config
             );
             ~MaterialResource();
             

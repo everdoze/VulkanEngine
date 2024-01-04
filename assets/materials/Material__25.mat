@@ -1,0 +1,10 @@
+<Version>0.1</Version>
+<Material 
+    name="Material__25" 
+    diffuse_color="0.588000 0.588000 0.588000 1.000000"
+    diffuse_map_name="lion"
+    specular_map_name="lion_spec"
+    normal_map_name="lion_ddn"
+    shininess="10.0">
+    <Shader name="Builtin.MaterialShader" />
+</Material>

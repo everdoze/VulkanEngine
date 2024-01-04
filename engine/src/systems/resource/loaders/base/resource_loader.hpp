@@ -12,7 +12,7 @@ namespace Engine {
         BINARY,
         IMAGE,
         MATERIAL,
-        STATIC_MESH,
+        MESH,
         SHADER,
         CUSTOM
     };

@@ -121,7 +121,7 @@ namespace Engine {
             std::string name;
             b8 use_instances;
             b8 use_locals;
-
+            
             std::vector<ShaderUniformConfig> uniforms;
             std::unordered_map<std::string, ShaderUniformConfig*> uniforms_lookup;
             std::vector<ShaderStageConfig> stages;

@@ -10,18 +10,18 @@ namespace Engine {
 
     #define DEFAULT_MATERIAL_NAME "default_material"
 
-    struct MaterialCreateInfo {
-        std::string name;
-        TextureUse use;
-        Texture* texture;
-        Shader* shader;
-        glm::vec4 diffuse_color;
-    };
-
     class TextureMap {
         public:
             Texture* texture;
             TextureUse use;
+    };
+
+    struct MaterialCreateInfo {
+        std::string name;
+        std::vector<TextureMap> textures;
+        Shader* shader;
+        glm::vec4 diffuse_color;
+        f32 shininess;
     };
 
     class Material {
@@ -36,6 +36,10 @@ namespace Engine {
             u32 GetGeneration() { return generation; };
             glm::vec4 GetDiffuseColor() { return diffuse_color; };
             TextureMap& GetDiffuseMap() { return diffuse_map; };
+            TextureMap& GetSpecularMap() { return specular_map; };
+
+            void SetFrame(u32 frame) { current_frame = frame; };
+            u32 GetFrame() { return current_frame; }; 
 
             b8 AcquireInstanceResources();
             b8 ApplyInstance();
@@ -56,6 +60,10 @@ namespace Engine {
             u32 interanal_id;
             glm::vec4 diffuse_color;
             TextureMap diffuse_map;
+            TextureMap specular_map;
+            TextureMap normals_map;
             FreelistNode* memory;
+            u32 current_frame;
+            f32 shininess;
     };
 };

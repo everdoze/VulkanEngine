@@ -1,0 +1,10 @@
+<Version>0.1</Version>
+<Material 
+    name="paving2" 
+    diffuse_color="1.0 1.0 1.0 1.0" 
+    diffuse_map_name="paving2" 
+    specular_map_name="paving2_SPEC"
+    normal_map_name="paving2_NRM"
+    shininess="12.0">
+    <Shader name="Builtin.MaterialShader" />
+</Material>

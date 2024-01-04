@@ -8,10 +8,8 @@
 #include "systems/resource/resource_system.hpp"
 #include "systems/texture/texture_system.hpp"
 
-#define VULKAN_SHADER_MAX_BINDINGS 32
-
 namespace Engine {
-
+    
     b8 operator&(const VulkanShaderDescriptorBindingFlags& value, const VulkanShaderDescriptorBindingFlags& operable) {
         return (u8)value & (u8)operable;
     };
@@ -59,6 +57,7 @@ namespace Engine {
             }
             stages.push_back(stage);
         }
+
 
         this->pool_sizes = vk_config.pool_sizes;
         this->max_descriptor_set_count = vk_config.max_descriptor_set_count;
@@ -513,7 +512,7 @@ namespace Engine {
         if (instance_id == INVALID_ID) {
             VulkanShaderInsanceState inst_st = {};
             inst_st.id = instance_states.size();
-            inst_st.offset = ubo.offset;
+            inst_st.offset = global_ubo_stride;
             instance_states.push_back(inst_st);
             instance_id = inst_st.id;
             instance_state = &instance_states[inst_st.id];
@@ -522,10 +521,16 @@ namespace Engine {
         }
 
         u32 texture_count = descriptor_sets[(u32)ShaderScope::INSTANCE].bindings[(u32)VulkanShaderDescriptorBindingIndex::SAMPLER].descriptorCount;
-        VulkanTexture* default_texture = static_cast<VulkanTexture*>(TextureSystem::GetInstance()->GetDefaultTexture());
+        VulkanTexture* default_diffuse = static_cast<VulkanTexture*>(TextureSystem::GetInstance()->GetDefaultDiffuse());
+        VulkanTexture* default_spec = static_cast<VulkanTexture*>(TextureSystem::GetInstance()->GetDefaultSpecular());
+        VulkanTexture* default_nrm = static_cast<VulkanTexture*>(TextureSystem::GetInstance()->GetDefaultNormal());
         instance_state->instance_textures.resize(texture_count);
-        for (u32 i = 0; i < texture_count; ++i) {
-            instance_state->instance_textures[i] = default_texture;
+        instance_state->instance_textures[0] = default_diffuse;
+        if (texture_count > 1) {
+            instance_state->instance_textures[1] = default_spec;
+        }
+        if (texture_count > 2) {
+            instance_state->instance_textures[2] = default_nrm;
         }
         FreelistNode* node = uniform_buffer->Allocate(ubo_stride);
         if (!node) {

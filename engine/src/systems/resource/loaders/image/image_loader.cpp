@@ -12,8 +12,24 @@ namespace Engine {
     ImageLoader::ImageLoader(u32 id, std::string type_path) : ResourceLoader(id, ResourceType::IMAGE, type_path) {};
 
     Resource* ImageLoader::Load(std::string name) {
-        std::string file_path = StringFormat("%s/%s.%s", type_path.c_str(), name.c_str(), "png");
         stbi_set_flip_vertically_on_load(true);
+
+        #define IMAGE_EXTENSION_COUNT 4
+        b8 found = false;
+        std::string file_path;
+        std::string extensions[IMAGE_EXTENSION_COUNT] = {".tga", ".png", ".jpg", ".bmp"};
+        for (u32 i = 0; i < IMAGE_EXTENSION_COUNT; ++i) {
+            file_path = StringFormat("%s/%s%s", type_path.c_str(), name.c_str(), extensions[i].c_str());
+            if (FileSystem::FileExists(file_path)) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            ERROR("ImageLoader::Load - file not found for '%s'", name.c_str());
+            return nullptr;
+        }
 
         const u8 required_channel_count = 4;
 

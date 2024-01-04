@@ -10,7 +10,9 @@ namespace Engine {
     };
 
     VulkanMaterial::~VulkanMaterial() {
-        vulkan_shader->ReleaseInstanceResources(id);
+        if (vulkan_shader) {
+            vulkan_shader->ReleaseInstanceResources(id);
+        }
     };
 
 }

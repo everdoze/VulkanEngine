@@ -1,0 +1,10 @@
+<Version>0.1</Version>
+<Material 
+    name="fabric_c" 
+    diffuse_color="0.588000 0.588000 0.588000 1.000000"
+    diffuse_map_name="sponza_curtain_diff"
+    specular_map_name="sponza_curtain_spec"
+    normal_map_name="sponza_curtain_ddn"
+    shininess="10.0">
+    <Shader name="Builtin.MaterialShader" />
+</Material>

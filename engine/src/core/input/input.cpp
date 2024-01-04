@@ -8,6 +8,13 @@ namespace Engine {
 
     InputSystem* InputSystem::instance = nullptr;
 
+    InputSystem::InputSystem() {
+        Platform::ZMemory(&this->keyboard_prev, sizeof(KeyboardState));
+        Platform::ZMemory(&this->keyboard_current, sizeof(KeyboardState));
+        Platform::ZMemory(&this->mouse_prev, sizeof(MouseState));
+        Platform::ZMemory(&this->mouse_current, sizeof(MouseState));
+    };
+
     b8 InputSystem::Initialize() {
         if (!instance) {
             instance = new InputSystem();
@@ -65,7 +72,7 @@ namespace Engine {
     void InputSystem::ProcessMouseMove(i16 x, i16 y) {
         if (this->mouse_current.x != x || this->mouse_current.y != y) {
             // DEBUG("Mouse pos: %i, %i!", x, y);
-
+            
             // Update internal input_state->
             this->mouse_current.x = x;
             this->mouse_current.y = y;

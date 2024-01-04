@@ -1,0 +1,10 @@
+<Version>0.1</Version>
+<Material 
+    name="cobblestone" 
+    diffuse_color="1.0 1.0 1.0 1.0" 
+    diffuse_map_name="cobblestone" 
+    specular_map_name="cobblestone_SPEC"
+    normal_map_name="cobblestone_NRM"
+    shininess="32.5">
+    <Shader name="Builtin.MaterialShader" />
+</Material>

@@ -14,6 +14,9 @@ namespace Engine {
         //     EventBind(Test)
         // );
 
+        camera_position = glm::vec3(0, 0, 30.0f);
+        camera_euler = glm::vec3(0, 0, 0);
+
         GenerateProjectionMatrix();
         GenerateViewMatrix();
         GenerateUIProjectionMatrix();
@@ -43,7 +46,6 @@ namespace Engine {
 
     void Camera::GenerateViewMatrix() {
         glm::mat4 rotation = glm::toMat4(GetOrientation());
-
         glm::mat4 translation = glm::translate(glm::identity<glm::mat4>(), camera_position);
 
         view = translation * rotation;
@@ -56,7 +58,7 @@ namespace Engine {
     };
 
     glm::quat Camera::GetOrientation() {
-        return glm::quat(-glm::vec3(camera_euler));
+        return glm::quat(camera_euler);
     };
     
     glm::vec3 Camera::GetUpDirection() {
@@ -78,10 +80,10 @@ namespace Engine {
     };
 
     b8 Camera::Test(EventType type, EventContext context) {
-        u16 mouse_x = context.data.u16[0];
-        u16 mouse_y = context.data.u16[1];
+        i16 mouse_x = context.data.i16[2];
+        i16 mouse_y = context.data.i16[3];
 
-        INFO("MouseX: %u, MouseY: %u", mouse_x, mouse_y);
+        // INFO("MouseX: %i, MouseY: %i", mouse_x, mouse_y);
 
         return true;
     };
@@ -117,12 +119,12 @@ namespace Engine {
     };
 
     void Camera::Yaw(f32 amount) {
-        camera_euler.y += amount;
+        camera_euler.y -= amount;
         camera_dirty = true;
     };
 
     void Camera::Pitch(f32 amount) {
-        camera_euler.x += amount;
+        camera_euler.x -= amount;
 
         // Clamp to avoid Gimball lock
         camera_euler.x = Clamp(camera_euler.x, -limit, limit);
@@ -131,7 +133,7 @@ namespace Engine {
     };
 
     void Camera::Roll(f32 amount) {
-        camera_euler.z += amount;
+        camera_euler.z -= amount;
         camera_dirty = true;
     };
 

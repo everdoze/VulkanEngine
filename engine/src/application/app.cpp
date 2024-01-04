@@ -48,35 +48,40 @@ namespace Engine {
             EventBind(OnDebugEvent)
         );
 
+        event->RegisterEvent(
+            EventType::Debug3,
+            "Application",
+            EventBind(OnDebugEvent2)
+        );
+
+        return true;
+    };
+
+    b8 Application::OnDebugEvent2(EventType type, EventContext& context) {
+        rotate = !rotate;
         return true;
     };
 
     b8 Application::OnDebugEvent(EventType type, EventContext& context) {
-        const int names_count = 2;
-        const char* names[names_count] = {
+        const int names_count = 4;
+        std::string names[names_count] = {
             "cobblestone",
-            "paving"
+            "paving",
+            "paving2",
+            "test"
         };
 
-        TextureSystem* ts = TextureSystem::GetInstance();
-        Texture* texture = test_geometry->GetMaterial()->GetDiffuseMap().texture;
+        current_material = (current_material+1) % 4;
 
-        const char* old_name = current_texture < names_count ? names[current_texture] : nullptr;
+        MaterialSystem* ms = MaterialSystem::GetInstance();
+        Material* new_material = ms->AcquireMaterial(names[current_material]);
 
-        current_texture = (current_texture + 1) % 2;
+        for (Mesh* mesh : meshes) {
+            for (Geometry* geom : mesh->geometries) {
+                geom->SetMaterial(new_material);
+            }
+        }
         
-        u32 old_gen = 0;
-        if (texture) {
-            old_gen = texture->GetGeneration();
-        }
-
-        texture = ts->AcquireTexture(names[current_texture], true);
-
-        texture->SetGeneration(old_gen+1);
-        test_geometry->GetMaterial()->GetDiffuseMap().texture = texture;
-        if (old_name) {
-            ts->ReleaseTexture(old_name);
-        }
         
         return true;
     };
@@ -154,11 +159,46 @@ namespace Engine {
             
             // TODO: temp
             GeometrySystem* gs = GeometrySystem::GetInstance();
-            GeometryConfig g_config = gs->GeneratePlainConfig(10.0f, 10.0f, 5, 5, 20.0f, 20.0f, "test_geometry", "test");
-            test_geometry = gs->AcquireGeometryFromConfig(g_config, true);
 
-            Platform::FMemory(g_config.indices); 
-            Platform::FMemory(g_config.vertices); 
+            // GeometryConfig g_config = gs->GenerateCubeConfig(10.0f, 10.0f, 10.0f, 1.0f, 1.0f, "test_cube", "test");
+            // MeshCreateConfig cube_01{};
+            // cube_01.geometries.push_back(gs->AcquireGeometryFromConfig(g_config, true));
+            // cube_01.transform = new Transform();
+            
+            // Mesh* parent = new Mesh(cube_01);
+            // meshes.push_back(parent);
+
+            // gs->DisposeConfig(g_config);
+            
+            // GeometryConfig g_config2 = gs->GenerateCubeConfig(5.0f, 5.0f, 5.0f, 1.0f, 1.0f, "test_cube2", "test");
+            // MeshCreateConfig cube_02{};
+            // cube_02.geometries.push_back(gs->AcquireGeometryFromConfig(g_config2, true));
+            // cube_02.transform = new Transform(glm::vec3(15.0f, 0.0f, 0.0f), parent->transform);
+
+            // Mesh* second = new Mesh(cube_02);
+            // meshes.push_back(second);
+
+            // gs->DisposeConfig(g_config2);
+
+            // GeometryConfig g_config3 = gs->GenerateCubeConfig(3.0f, 3.0f, 3.0f, 1.0f, 1.0f, "test_cube3", "test");
+            // MeshCreateConfig cube_03{};
+            // cube_03.geometries.push_back(gs->AcquireGeometryFromConfig(g_config3, true));
+            // cube_03.transform = new Transform(glm::vec3(5.0f, 0.0f, 0.0f), second->transform);
+
+            // meshes.push_back(new Mesh(cube_03));
+
+            // gs->DisposeConfig(g_config3);
+
+            MeshResource* mesh_resource = (MeshResource*)ResourceSystem::GetInstance()->LoadResource(ResourceType::MESH, "sponza");
+            MeshCreateConfig sponza{};
+            GeometryConfigs configs = mesh_resource->GetConfigs();
+            for (auto& config : configs) {
+                sponza.geometries.push_back(gs->AcquireGeometryFromConfig(config, true));
+            }
+            sponza.transform = new Transform(glm::vec3(-30.0f, 0.0f, 0.0f));
+            meshes.push_back(new Mesh(sponza));
+            delete mesh_resource;
+
 
             // Load up some test UI geometry.
             GeometryConfig ui_config;
@@ -169,24 +209,25 @@ namespace Engine {
             ui_config.material_name = "test_ui";
             ui_config.name = "test_ui_geometry";
 
-            const f32 f = 256.0f;
+            const f32 width = 128.0f;
+            const f32 height = 36.0f;
             std::vector<Vertex2D> uiverts(4);
             uiverts[0].position.x = 0.0f;  // 0    3
             uiverts[0].position.y = 0.0f;  //
             uiverts[0].texcoord.x = 0.0f;  //
             uiverts[0].texcoord.y = 0.0f;  // 2    1
 
-            uiverts[1].position.y = f;
-            uiverts[1].position.x = f;
+            uiverts[1].position.y = height;
+            uiverts[1].position.x = width;
             uiverts[1].texcoord.x = 1.0f;
             uiverts[1].texcoord.y = 1.0f;
 
             uiverts[2].position.x = 0.0f;
-            uiverts[2].position.y = f;
+            uiverts[2].position.y = height;
             uiverts[2].texcoord.x = 0.0f;
             uiverts[2].texcoord.y = 1.0f;
 
-            uiverts[3].position.x = f;
+            uiverts[3].position.x = width;
             uiverts[3].position.y = 0.0;
             uiverts[3].texcoord.x = 1.0f;
             uiverts[3].texcoord.y = 0.0f;
@@ -228,8 +269,8 @@ namespace Engine {
 
         f64 running_time = 0;
         u8 frame_count = 0;
-        f64 target_frame_seconds = 1.0f / 170; // Max frame rate
-
+        f64 target_frame_seconds = 1.0f / 70; // Max frame rate
+        
         while (this->running) {
             if (!Platform::PumpMessages()) {
                 this->running = false;
@@ -242,15 +283,43 @@ namespace Engine {
                 f64 frame_start_time = Platform::GetAbsoluteTime();
 
                 GameUpdate(delta);
+                
+                glm::quat rotation = glm::angleAxis<f32>(0.5f * delta, glm::vec3(0, 1, 0));
 
                 RenderPacket packet;
                 packet.delta_time = delta;
-
-                GeometryRenderData test_render;
-                test_render.geometry = test_geometry;
-                test_render.model = glm::identity<glm::mat4>();
+                packet.geometries.reserve(meshes.size());
+                for (u32 i = 0; i < meshes.size(); ++i) {
+                    Mesh* mesh = meshes[i];
+                    if (rotate) {
+                        meshes[i]->transform->Rotate(rotation);
+                    }
+                    if (packet.geometries.capacity() < meshes.size() + mesh->geometries.size()) {
+                        packet.geometries.reserve(packet.geometries.capacity() + mesh->geometries.size());
+                    }
+                    
+                    for (Geometry* geom: mesh->geometries) {
+                        GeometryRenderData test_render; 
+                        test_render.geometry = geom;
+                        
+                        test_render.model = mesh->transform->GetWorld();
+                        
+                        packet.geometries.push_back(test_render);
+                    }
+                }
+ 
                 
-                packet.geometries.push_back(test_render);
+                // test_render.geometry = test_geometry;
+                // test_render.model = glm::identity<glm::mat4>();
+                // static f32 angle = 0;
+                // angle += 0.5f * delta;
+
+                // test_render.model = glm::rotate(test_render.model, angle, glm::vec3(0, -1, 0));
+                // // test_render.model = test_render.model * glm::translate(glm::identity<glm::mat4>(), glm::vec3(0,0,0));
+                // // test_render.model = glm::scale(glm::identity<glm::mat4>(), glm::vec3(1,1,1)) * test_render.model;
+
+                
+                // packet.geometries.push_back(test_render);
 
                 GeometryRenderData test_ui_render;
                 test_ui_render.geometry = test_ui_geometry;
@@ -293,6 +362,12 @@ namespace Engine {
     };
 
     void Application::Shutdown () {
+        // Clearing meshes
+        for (Mesh* mesh : meshes) {
+            delete mesh;
+        }
+        meshes.clear();
+
         // Unregister events /////////////
         EventSystem::GetInstance()->UnregisterEvent(EventType::AppQuit, "Application");
         EventSystem::GetInstance()->UnregisterEvent(EventType::KeyPressed, "Application");
@@ -372,4 +447,12 @@ namespace Engine {
         return false;
     };
 
+    u32 Application::GetFrameWidth() {
+        return RendererFrontend::GetFrameWidthS();
+    };
+
+    u32 Application::GetFrameHeight() {
+        return RendererFrontend::GetFrameHeightS();
+    };
+ 
 };

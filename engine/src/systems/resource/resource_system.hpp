@@ -9,6 +9,14 @@
 #include "systems/resource/resources/material/material_resource.hpp"
 #include "systems/resource/resources/binary/binary_resource.hpp"
 #include "systems/resource/resources/shader/shader_resource.hpp"
+#include "systems/resource/resources/mesh/mesh_resource.hpp"
+
+#include "core/logger/logger.hpp"
+#include "loaders/image/image_loader.hpp"
+#include "loaders/material/material_loader.hpp"
+#include "loaders/binary/binary_loader.hpp"
+#include "loaders/shader/shader_loader.hpp"
+#include "loaders/mesh/mesh_loader.hpp"
 
 namespace Engine {
 

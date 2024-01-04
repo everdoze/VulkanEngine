@@ -1,11 +1,5 @@
 #include "resource_system.hpp"
 
-#include "core/logger/logger.hpp"
-#include "loaders/image/image_loader.hpp"
-#include "loaders/material/material_loader.hpp"
-#include "loaders/binary/binary_loader.hpp"
-#include "loaders/shader/shader_loader.hpp"
-
 namespace Engine {
     
     ResourceSystem* ResourceSystem::instance = nullptr;
@@ -45,6 +39,9 @@ namespace Engine {
 
         // Shader loader
         RegisterLoader(ResourceType::SHADER, new ShaderLoader(registered_loaders.size(), CreateLoaderPath("/shaders")));
+
+        // Mesh loader
+        RegisterLoader(ResourceType::MESH, new MeshLoader(registered_loaders.size(), CreateLoaderPath("/models")));
     };  
 
     ResourceSystem::~ResourceSystem() {
@@ -76,8 +73,8 @@ namespace Engine {
             case ResourceType::TEXT: {
                 return "TEXT";
             }
-            case ResourceType::STATIC_MESH: {
-                return "STATIC_MESH";
+            case ResourceType::MESH: {
+                return "MESH";
             }
             case ResourceType::IMAGE: {
                 return "IMAGE";

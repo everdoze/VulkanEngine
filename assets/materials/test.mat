@@ -1,4 +1,9 @@
 <Version>0.1</Version>
-<Material name="test_material" diffuse_color="1.0 1.0 1.0 1.0" diffuse_map_name="cobblestone">
+<Material 
+    name="test_material" 
+    diffuse_color="1.0 1.0 1.0 1.0" 
+    diffuse_map_name="orange_lines_512" 
+    specular_map_name="orange_lines_512_SPEC"
+    shininess="12.0">
     <Shader name="Builtin.MaterialShader" />
 </Material>

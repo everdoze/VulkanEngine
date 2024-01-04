@@ -1,7 +1,7 @@
 #pragma once
 
 #include "defines.hpp"
-#include "renderer/renderer_types.inl"
+#include "renderer/renderer_types.hpp"
 #include "resources/shader/shader.hpp"
 
 #define DEFAULT_TEXTURE_NAME "default_texture"
@@ -13,6 +13,13 @@ namespace Engine {
         b8 auto_release;
         u32 ref_count;
     };
+
+    struct Param {
+        std::string name;
+        void* data;
+    };
+
+    typedef std::vector<Param> ParamsData;
 
     class ShaderSystem {
         public:
@@ -29,7 +36,7 @@ namespace Engine {
             b8 UseShader(std::string name);
             b8 DestroyShader(std::string name);
             
-            b8 ApplyGlobals(std::string name, const glm::mat4* projection, const glm::mat4* view);
+            b8 ApplyGlobals(std::string name, ParamsData& params);
 
             b8 SetUniform(std::string& name, const void* value);
 

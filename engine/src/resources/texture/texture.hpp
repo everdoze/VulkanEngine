@@ -8,7 +8,9 @@ namespace Engine {
 
     enum class TextureUse {
         UNKNOWN = 0x00,
-        MAP_DIFFUSE = 0x01
+        MAP_DIFFUSE = 0x01,
+        MAP_SPECULAR = 0x02,
+        MAP_NORMAL = 0x04
     };
 
     struct TextureCreateInfo {
