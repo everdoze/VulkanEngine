@@ -153,15 +153,13 @@ namespace Engine {
                     material = MaterialSystem::GetInstance()->GetDefaultMaterial();
                 }
 
-                if (material->GetFrame() != backend_frame) {
-                    if (!material->ApplyInstance()) {
-                        ERROR("Failed to apply material %s, skipping..", material->GetName().c_str());
-                        continue;
+                if (material->GetInternalId() == 3) {
+                        u32 i = 0;
+                        i++;
                     }
-                    material->SetFrame(backend_frame);
-                }
-                
 
+                material->ApplyInstance(backend_frame);
+            
                 material->ApplyLocal(&packet->geometries[i].model);
 
                 instance->backend->DrawGeometry(packet->geometries[i]);
@@ -198,13 +196,7 @@ namespace Engine {
                     material = MaterialSystem::GetInstance()->GetDefaultMaterial();
                 }
 
-                if (material->GetFrame() != backend_frame) {
-                    if (!material->ApplyInstance()) {
-                        ERROR("Failed to apply material %s, skipping..", material->GetName().c_str());
-                        continue;
-                    }
-                    material->SetFrame(backend_frame);
-                }
+                material->ApplyInstance(backend_frame);
 
                 material->ApplyLocal(&packet->ui_geometries[i].model);
 

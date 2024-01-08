@@ -5,6 +5,6 @@
     diffuse_map_name="background"
     specular_map_name="background_spec"
     normal_map_name="background_ddn"
-    shininess="10.0">
+    shininess="10.000000">
     <Shader name="Builtin.MaterialShader" />
 </Material>

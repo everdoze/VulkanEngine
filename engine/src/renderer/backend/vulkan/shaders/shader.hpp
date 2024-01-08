@@ -100,7 +100,7 @@ namespace Engine {
             void BindInstance(u32 instance_id);
 
             void ApplyGlobals();
-            void ApplyInstance();
+            void ApplyInstance(b8 needs_update);
 
             u32 AcquireInstanceResources();
             void ReleaseInstanceResources(u32 instance_id);

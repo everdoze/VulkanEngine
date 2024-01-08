@@ -32,7 +32,7 @@ namespace Engine {
             std::string& GetName() { return name; };
             Shader* GetShader() { return shader; };
             u32 GetId() { return id; };
-            u32 GetInternalId() { return interanal_id; };
+            u32 GetInternalId() { return internal_id; };
             u32 GetGeneration() { return generation; };
             glm::vec4 GetDiffuseColor() { return diffuse_color; };
             TextureMap& GetDiffuseMap() { return diffuse_map; };
@@ -42,10 +42,10 @@ namespace Engine {
             u32 GetFrame() { return current_frame; }; 
 
             b8 AcquireInstanceResources();
-            b8 ApplyInstance();
+            b8 ApplyInstance(u32 frame);
             b8 ApplyLocal(const glm::mat4* model);
 
-            void SetInternalId(u32 id) { interanal_id = id; };
+            void SetInternalId(u32 id) { internal_id = id; };
             void SetGeneration(u32 gen) { generation = gen; };
             void SetId(u32 id) { id = id; };
             void SetMemory(FreelistNode* memory) { this->memory = memory; };
@@ -57,7 +57,7 @@ namespace Engine {
             Shader* shader;
             u32 id;
             u32 generation;
-            u32 interanal_id;
+            u32 internal_id;
             glm::vec4 diffuse_color;
             TextureMap diffuse_map;
             TextureMap specular_map;

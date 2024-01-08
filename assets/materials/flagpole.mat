@@ -5,6 +5,6 @@
     diffuse_map_name="sponza_flagpole_diff"
     specular_map_name="sponza_flagpole_spec"
     normal_map_name="sponza_flagpole_ddn"
-    shininess="10.0">
+    shininess="10.000000">
     <Shader name="Builtin.MaterialShader" />
 </Material>

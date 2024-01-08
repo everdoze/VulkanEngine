@@ -92,23 +92,23 @@ namespace Engine {
         Platform::SMemory(pixels, 255, sizeof(u8) * pixel_count * channels);
 
         // Each pixel.
-        for (u64 row = 0; row < tex_dimension; ++row) {
-            for (u64 col = 0; col < tex_dimension; ++col) {
-                u64 index = (row * tex_dimension) + col;
-                u64 index_bpp = index * channels;
-                if (row % 2) {
-                    if (col % 2) {
-                        pixels[index_bpp + 0] = 0;
-                        pixels[index_bpp + 1] = 0;
-                    }
-                } else {
-                    if (!(col % 2)) {
-                        pixels[index_bpp + 0] = 0;
-                        pixels[index_bpp + 1] = 0;
-                    }
-                }
-            }
-        }
+        // for (u64 row = 0; row < tex_dimension; ++row) {
+        //     for (u64 col = 0; col < tex_dimension; ++col) {
+        //         u64 index = (row * tex_dimension) + col;
+        //         u64 index_bpp = index * channels;
+        //         if (row % 2) {
+        //             if (col % 2) {
+        //                 pixels[index_bpp + 0] = 0;
+        //                 pixels[index_bpp + 1] = 0;
+        //             }
+        //         } else {
+        //             if (!(col % 2)) {
+        //                 pixels[index_bpp + 0] = 0;
+        //                 pixels[index_bpp + 1] = 0;
+        //             }
+        //         }
+        //     }
+        // }
 
         TextureCreateInfo create_info;
         create_info.name = DEFAULT_TEXTURE_NAME;

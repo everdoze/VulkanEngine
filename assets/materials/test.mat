@@ -4,6 +4,6 @@
     diffuse_color="1.0 1.0 1.0 1.0" 
     diffuse_map_name="orange_lines_512" 
     specular_map_name="orange_lines_512_SPEC"
-    shininess="12.0">
+    shininess="12.000000">
     <Shader name="Builtin.MaterialShader" />
 </Material>

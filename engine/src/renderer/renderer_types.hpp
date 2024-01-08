@@ -50,21 +50,21 @@ namespace Engine {
 namespace std {
     template<> struct hash<glm::vec4> {
         u64 operator()(glm::vec4 const& v) const {
-            std::hash<float> floatHasher;
+            std::hash<f32> floatHasher;
             return floatHasher(v.x) ^ (floatHasher(v.y) << 1) ^ (floatHasher(v.z) << 2) ^ (floatHasher(v.w) << 3);
         }
     };
 
     template<> struct hash<glm::vec3> {
         u64 operator()(glm::vec3 const& v) const {
-            std::hash<float> floatHasher;
+            std::hash<f32> floatHasher;
             return floatHasher(v.x) ^ (floatHasher(v.y) << 1) ^ (floatHasher(v.z) << 2);
         }
     };
 
     template<> struct hash<glm::vec2> {
         u64 operator()(glm::vec2 const& v) const {
-            std::hash<float> floatHasher;
+            std::hash<f32> floatHasher;
             return floatHasher(v.x) ^ (floatHasher(v.y) << 1);
         }
     };

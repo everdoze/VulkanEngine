@@ -160,42 +160,42 @@ namespace Engine {
             // TODO: temp
             GeometrySystem* gs = GeometrySystem::GetInstance();
 
-            // GeometryConfig g_config = gs->GenerateCubeConfig(10.0f, 10.0f, 10.0f, 1.0f, 1.0f, "test_cube", "test");
-            // MeshCreateConfig cube_01{};
-            // cube_01.geometries.push_back(gs->AcquireGeometryFromConfig(g_config, true));
-            // cube_01.transform = new Transform();
+            GeometryConfig g_config = gs->GenerateCubeConfig(10.0f, 10.0f, 10.0f, 1.0f, 1.0f, "test_cube", "test");
+            MeshCreateConfig cube_01{};
+            cube_01.geometries.push_back(gs->AcquireGeometryFromConfig(g_config, true));
+            cube_01.transform = new Transform();
             
-            // Mesh* parent = new Mesh(cube_01);
-            // meshes.push_back(parent);
+            Mesh* parent = new Mesh(cube_01);
+            meshes.push_back(parent);
 
-            // gs->DisposeConfig(g_config);
+            gs->DisposeConfig(g_config);
             
-            // GeometryConfig g_config2 = gs->GenerateCubeConfig(5.0f, 5.0f, 5.0f, 1.0f, 1.0f, "test_cube2", "test");
-            // MeshCreateConfig cube_02{};
-            // cube_02.geometries.push_back(gs->AcquireGeometryFromConfig(g_config2, true));
-            // cube_02.transform = new Transform(glm::vec3(15.0f, 0.0f, 0.0f), parent->transform);
+            GeometryConfig g_config2 = gs->GenerateCubeConfig(5.0f, 5.0f, 5.0f, 1.0f, 1.0f, "test_cube2", "test");
+            MeshCreateConfig cube_02{};
+            cube_02.geometries.push_back(gs->AcquireGeometryFromConfig(g_config2, true));
+            cube_02.transform = new Transform(glm::vec3(15.0f, 0.0f, 0.0f), parent->transform);
 
-            // Mesh* second = new Mesh(cube_02);
-            // meshes.push_back(second);
+            Mesh* second = new Mesh(cube_02);
+            meshes.push_back(second);
 
-            // gs->DisposeConfig(g_config2);
+            gs->DisposeConfig(g_config2);
 
-            // GeometryConfig g_config3 = gs->GenerateCubeConfig(3.0f, 3.0f, 3.0f, 1.0f, 1.0f, "test_cube3", "test");
-            // MeshCreateConfig cube_03{};
-            // cube_03.geometries.push_back(gs->AcquireGeometryFromConfig(g_config3, true));
-            // cube_03.transform = new Transform(glm::vec3(5.0f, 0.0f, 0.0f), second->transform);
+            GeometryConfig g_config3 = gs->GenerateCubeConfig(3.0f, 3.0f, 3.0f, 1.0f, 1.0f, "test_cube3", "test");
+            MeshCreateConfig cube_03{};
+            cube_03.geometries.push_back(gs->AcquireGeometryFromConfig(g_config3, true));
+            cube_03.transform = new Transform(glm::vec3(5.0f, 0.0f, 0.0f), second->transform);
 
-            // meshes.push_back(new Mesh(cube_03));
+            meshes.push_back(new Mesh(cube_03));
 
-            // gs->DisposeConfig(g_config3);
+            gs->DisposeConfig(g_config3);
 
             MeshResource* mesh_resource = (MeshResource*)ResourceSystem::GetInstance()->LoadResource(ResourceType::MESH, "sponza");
             MeshCreateConfig sponza{};
             GeometryConfigs configs = mesh_resource->GetConfigs();
-            for (auto& config : configs) {
-                sponza.geometries.push_back(gs->AcquireGeometryFromConfig(config, true));
+            for (u32 i = 0; i < configs.size(); ++i) {
+                sponza.geometries.push_back(gs->AcquireGeometryFromConfig(configs[i], true));
             }
-            sponza.transform = new Transform(glm::vec3(-30.0f, 0.0f, 0.0f));
+            sponza.transform = new Transform(glm::vec3(0,0,0), glm::identity<glm::quat>(), glm::vec3(0.05f, 0.05f, 0.05f));
             meshes.push_back(new Mesh(sponza));
             delete mesh_resource;
 

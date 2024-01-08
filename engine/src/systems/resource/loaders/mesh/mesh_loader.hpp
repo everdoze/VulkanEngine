@@ -4,6 +4,7 @@
 #include "systems/resource/loaders/base/resource_loader.hpp"
 #include "platform/filesystem.hpp"
 #include "renderer/renderer_types.hpp"
+#include "resources/geometry/geometry.hpp"
 
 namespace Engine {
     
@@ -42,6 +43,7 @@ namespace Engine {
         
         protected:
             Resource* LoadOBJ(const std::string& file_path, const std::string& name);
+            b8 WriteToE3DM(const std::string& file_path, const std::string& name, GeometryConfigs& configs);
 
     };
 

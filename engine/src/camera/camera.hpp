@@ -55,7 +55,7 @@ namespace Engine {
 
             // TODO: Probably need to configurate these
             f32 near_clip = 0.1f;
-            f32 far_clip = 5000.0f;
+            f32 far_clip = 1000.0f;
             f32 fov = 45.0f;
 
             b8 camera_dirty = false;

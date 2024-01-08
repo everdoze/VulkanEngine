@@ -5,7 +5,6 @@
 #include "platform/platform.hpp"
 #include "vendor/tinyobj/tinyobj.hpp"
 #include "systems/resource/resources/mesh/mesh_resource.hpp"
-#include "resources/geometry/geometry.hpp"
 
 namespace Engine {
 
@@ -39,6 +38,13 @@ namespace Engine {
         return nullptr;
     };  
     
+    b8 WriteToE3DM(const std::string& file_path, const std::string& name, GeometryConfigs& configs) {
+        
+
+        u8 version = 0x0001U;
+
+    };
+
     Resource* MeshLoader::LoadOBJ(const std::string& file_path, const std::string& name) {
         tinyobj::attrib_t attributes;
         std::vector<tinyobj::shape_t> shapes;
@@ -52,7 +58,7 @@ namespace Engine {
         std::vector<u32> indices;
         indices.reserve(16384);
 
-        std::vector<GeometryConfig> configs;
+        GeometryConfigs configs;
         configs.reserve(16);
 
         std::string warnings;
@@ -67,14 +73,15 @@ namespace Engine {
             WARN("MeshLoader::LoadOBJ - %s", warnings.c_str());
         }
 
-        for (const auto& shape: shapes) {
-            
+        for (u32 i = 0; i < shapes.size(); ++i) {
+            auto& shape = shapes[i];
             GeometryExtent extent{};
-            u32 current_material = INVALID_ID;
+            u32 current_material = shape.mesh.material_ids[0];;
+            u32 index_offset = 0;
             for (u32 f = 0; f < shape.mesh.num_face_vertices.size(); ++f) {
-                current_material = shape.mesh.material_ids[f];
+                const u32 fv = 3;
                 for (u32 i = 0; i < 3; ++i) {
-                    tinyobj::index_t index = shape.mesh.indices[f * 3 + i];
+                    tinyobj::index_t index = shape.mesh.indices[index_offset + i];
                     Vertex3D vertex{};
                     
                     vertex.position = {
@@ -125,7 +132,7 @@ namespace Engine {
 
                     indices.push_back(uniqueVertices[vertex]);
                 }
-
+                index_offset += fv;
             }
             
             for (u32 i = 0; i < 3; ++i) {

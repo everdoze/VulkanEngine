@@ -29,7 +29,7 @@ namespace Engine
 
             std::string& GetName() { return name; };
             u32 GetId() { return id; };
-            u32 GetInternalId() { return interanal_id; };
+            u32 GetInternalId() { return internal_id; };
             u32 GetGeneration() { return generation; };
             void UpdateGeneration () { 
                 if (generation == INVALID_ID) {
@@ -42,7 +42,7 @@ namespace Engine
             void SetMaterial(Material* mat) { material = mat; };
             Material* GetMaterial() { return material; };
 
-            void SetInternalId(u32 id) { interanal_id = id; };
+            void SetInternalId(u32 id) { internal_id = id; };
             void SetGeneration(u32 gen) { generation = gen; };
             void SetId(u32 id) { id = id; };
 
@@ -56,7 +56,7 @@ namespace Engine
             std::string name;
             u32 id;
             u32 generation;
-            u32 interanal_id;
+            u32 internal_id;
             Material* material;
     };
 

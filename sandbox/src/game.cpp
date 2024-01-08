@@ -84,7 +84,7 @@ class Test : public Engine::Application {
                 camera->Pitch(1.0f * delta);
             }
 
-            f32 temp_move_speed = 500.0f;
+            f32 temp_move_speed = 50.0f;
             glm::vec3 velocity(0);
 
             if (input->IsKeyDown(Engine::Keys::KEYBOARD_W)) {

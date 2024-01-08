@@ -143,13 +143,7 @@ namespace Engine {
             );
         }
         
-        Material* material = RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
-        if (material) {
-            material->AcquireInstanceResources();
-            return material;
-        }
-        delete material;
-        return nullptr;
+        return RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
     };
 
     Material* MaterialSystem::AcquireMaterialFromConfig(MaterialConfig& config) {

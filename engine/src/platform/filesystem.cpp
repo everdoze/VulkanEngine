@@ -31,6 +31,13 @@ namespace Engine {
         return true;
     };
 
+    b8 File::Write(u32 size, void* data) {
+        if (!handle) {
+            return false;
+        }
+        handle.write((c8*)data, size);
+    };
+
     b8 File::ReadLine(std::string& line) {
         if (binary) {
             return false;

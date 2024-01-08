@@ -14,7 +14,7 @@ namespace Engine {
         //     EventBind(Test)
         // );
 
-        camera_position = glm::vec3(0, 0, 30.0f);
+        camera_position = glm::vec3(0, 5.0f, 30.0f);
         camera_euler = glm::vec3(0, 0, 0);
 
         GenerateProjectionMatrix();

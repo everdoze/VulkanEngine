@@ -11,7 +11,7 @@ namespace Engine {
         shader = info.shader;
         id = INVALID_ID;
         generation = INVALID_ID;
-        interanal_id = INVALID_ID;
+        internal_id = INVALID_ID;
         current_frame = INVALID_ID;
         diffuse_color = info.diffuse_color;
         shininess = info.shininess;
@@ -40,7 +40,7 @@ namespace Engine {
         name = "";
         id = INVALID_ID;
         generation = INVALID_ID;
-        interanal_id = INVALID_ID;
+        internal_id = INVALID_ID;
     };
 
     b8 Material::AcquireInstanceResources() {
@@ -49,41 +49,47 @@ namespace Engine {
             return false;
         }
 
-        interanal_id = shader->AcquireInstanceResources();
+        internal_id = shader->AcquireInstanceResources();
         return true;
     };
 
-    b8 Material::ApplyInstance() {
+    b8 Material::ApplyInstance(u32 frame) {
         if (!shader) {
             ERROR("Material::ApplyInstance - no shader provided in material, can't apply instance");
             return false;
         }
 
-        if (interanal_id == INVALID_ID) {
+        if (internal_id == INVALID_ID) {
             ERROR("Material::ApplyInstance - material resources not acquired from shader.");
             return false;
         }
 
-        shader->BindInstance(interanal_id);
+        b8 needs_update = current_frame != frame;
+        
+        shader->BindInstance(internal_id);
 
-        shader->SetUniformByName("diffuse_color", &diffuse_color);
+        if (needs_update) {
+            shader->SetUniformByName("diffuse_color", &diffuse_color);
 
-        if (diffuse_map.texture) {
-            shader->SetUniformByName("diffuse_texture", diffuse_map.texture);
-        }
-    
-        if (specular_map.texture) {
-            shader->SetUniformByName("specular_texture", specular_map.texture);
-        }
-        if (normals_map.texture) {
-            shader->SetUniformByName("normal_texture", normals_map.texture);
-        }
+            if (diffuse_map.texture) {
+                shader->SetUniformByName("diffuse_texture", diffuse_map.texture);
+            }
+        
+            if (specular_map.texture) {
+                shader->SetUniformByName("specular_texture", specular_map.texture);
+            }
+            if (normals_map.texture) {
+                shader->SetUniformByName("normal_texture", normals_map.texture);
+            }
 
-        if (shader->GetName() == BUILTIN_MATERIAL_SHADER_NAME) {
-            shader->SetUniformByName("shininess", &shininess);
+            if (shader->GetName() == BUILTIN_MATERIAL_SHADER_NAME) {
+                shader->SetUniformByName("shininess", &shininess);
+            }
+
+            current_frame = frame;
         }
         
-        shader->ApplyInstance();
+        shader->ApplyInstance(needs_update);
 
         return true;
     };

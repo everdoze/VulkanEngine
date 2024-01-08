@@ -5,6 +5,6 @@
     diffuse_map_name="chain_texture"
     specular_map_name="chain_texture_spec"
     normal_map_name="chain_texture_ddn"
-    shininess="10.0">
+    shininess="10.000000">
     <Shader name="Builtin.MaterialShader" />
 </Material>

@@ -23,6 +23,7 @@ namespace Engine {
             std::vector<c8> ReadAllBytes();
 
             b8 WriteLine(std::string line);
+            b8 Write(u32 size, void* data);
 
             b8 IsReady() { return ready; };
 

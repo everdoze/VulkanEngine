@@ -5,6 +5,6 @@
     diffuse_map_name="falc_wreck_low_DefaultMaterial_AlbedoTransparency" 
     specular_map_name="falc_wreck_low_DefaultMaterial_MetallicSmoothness"
     normal_map_name="falc_wreck_low_DefaultMaterial_Normal"
-    shininess="8.0">
+    shininess="8.000000">
     <Shader name="Builtin.MaterialShader" />
 </Material>

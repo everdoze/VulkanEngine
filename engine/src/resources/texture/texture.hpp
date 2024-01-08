@@ -31,6 +31,7 @@ namespace Engine {
             u32 GetId() { return id; };
             u32 GetWidth() { return width; };
             u32 GetHeight() { return height; };
+            std::string& GetName() { return name; };
 
             u8 GetChannelCount() { return channel_count; };
             u32 HasTransparency() { return has_transparency; };
