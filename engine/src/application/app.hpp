@@ -5,6 +5,7 @@
 #include "core/input/input.hpp"
 #include "core/event/event.hpp"
 #include "camera/camera.hpp"
+#include "resources/mesh/mesh.hpp"
 
 int main(int argc, char** argv);
 
@@ -65,18 +66,25 @@ namespace Engine {
             b8 onKey(EventType type, EventContext& context);
             b8 onResize(EventType type, EventContext& context);
             b8 OnDebugEvent(EventType type, EventContext& context);
+            b8 OnDebugEvent2(EventType type, EventContext& context);
+
+            u32 GetFrameWidth();
+            u32 GetFrameHeight();
 
 
         private:
             b8 running = false;
             b8 suspended = false;
             b8 is_ready = false;
+            b8 rotate = false;
 
             Clock clock;
 
+            std::vector<Mesh*> meshes;
+
             Geometry* test_geometry;
             Geometry* test_ui_geometry;
-            u32 current_texture = 2;
+            u32 current_material = 3;
             
             f64 last_time;
 

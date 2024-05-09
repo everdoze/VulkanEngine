@@ -11,7 +11,6 @@ namespace Engine {
 
     Resource* MaterialLoader::Load(std::string name) {
         std::string file_path = StringFormat("%s/%s.%s", type_path.c_str(), name.c_str(), "mat");
-        WARN("%s", file_path.c_str());
         tinyxml2::XMLDocument* file = FileSystem::OpenXml(file_path);
 
         // TODO: Use of versions
@@ -28,7 +27,29 @@ namespace Engine {
             ERROR("Error occured when parsing parameter 'diffuse_color' in material file '%s'.", diffuse_color.c_str(), file_path.c_str());
         }
 
-        data.diffuse_map_name = material->Attribute("diffuse_map_name");
+        const char* shininess = material->Attribute("shininess");
+        if (shininess) {
+            std::string buf = shininess;
+            if (!Parse(buf, &data.shininess)) {
+                ERROR("Error occured when parsing parameter 'shininess' in material file '%s'.", diffuse_color.c_str(), file_path.c_str());
+            }
+        }
+
+        const char* diffuse_name = material->Attribute("diffuse_map_name");
+        if (diffuse_name) {
+            data.diffuse_map_name = diffuse_name;
+        }
+
+        const char* normal_name = material->Attribute("normal_map_name");
+        if (normal_name) {
+            data.normal_map_name = normal_name;
+        }
+
+        const char* specular_name = material->Attribute("specular_map_name");
+        if (specular_name) {
+            data.specular_map_name = specular_name;
+        }
+        
         data.name = material->Attribute("name");
         
         tinyxml2::XMLElement* shader = material->FirstChildElement("Shader");

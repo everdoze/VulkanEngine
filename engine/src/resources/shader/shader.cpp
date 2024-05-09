@@ -49,7 +49,7 @@ namespace Engine {
                 uniform->offset = 0;
                 if (is_global) {
                     uniform->location = global_textures.size();
-                    global_textures.push_back(TextureSystem::GetInstance()->GetDefaultTexture());
+                    global_textures.push_back(TextureSystem::GetInstance()->GetDefaultDiffuse());
                 } else {
                     uniform->location = instance_texture_count;
                     instance_texture_count++;

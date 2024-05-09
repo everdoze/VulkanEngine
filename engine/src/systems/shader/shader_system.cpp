@@ -36,7 +36,7 @@ namespace Engine {
 
     Shader* ShaderSystem::GetShader(std::string name) {
         if (!registered_shaders[name]) {
-            ERROR("ShaderSystem::GetShader - Shader not found with name '%s'. Use ShaderSystem::CreateShader to create a shader.");
+            ERROR("ShaderSystem::GetShader - Shader not found with name '%s'. Use ShaderSystem::CreateShader to create a shader.", name.c_str());
             return nullptr;
         }
         return registered_shaders[name];
@@ -52,14 +52,15 @@ namespace Engine {
         return nullptr;
     };
 
-    b8 ShaderSystem::ApplyGlobals(std::string name, const glm::mat4* projection, const glm::mat4* view) {
+    b8 ShaderSystem::ApplyGlobals(std::string name, ParamsData& params) {
         Shader* shader = GetShader(name);
         if (shader) {
             shader->BindGlobals();
-
-            shader->SetUniformByName("projection", projection);
-            shader->SetUniformByName("view", view);
-
+    
+            for (u32 i = 0; i < params.size(); ++i) {
+                shader->SetUniformByName(params[i].name, params[i].data);
+            }
+            
             shader->ApplyGlobals();
 
             return true;

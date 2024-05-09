@@ -155,7 +155,7 @@ namespace Engine {
         return INVALID_ID;
     };
 
-    Geometry* GeometrySystem::AcquireGeometryFromConfig(GeometryConfig& config, b8 auto_release) {
+    Geometry* GeometrySystem::AcquireGeometryFromConfig(GeometryConfig config, b8 auto_release) {
         GeometryCreateInfo create_info = {};
         create_info.id = GetNewGeometryId();
         create_info.vertices = config.vertices;
@@ -185,15 +185,8 @@ namespace Engine {
         return g;
     };
 
-    Geometry* GeometrySystem::GetDefaultGeometry(GeometryType type) {
-        // TODO: Checks
-        switch (type) {
-            case GeometryType::GEOMETRY_3D: 
-                return default_geometry;
-            case GeometryType::GEOMETRY_2D:
-                return default_ui_geometry;
-        }
-        return nullptr;
+    Geometry* GeometrySystem::GetDefaultGeometry() {
+        return default_geometry;
     };
 
     GeometryConfig GeometrySystem::GeneratePlainConfig(
@@ -308,5 +301,159 @@ namespace Engine {
         }
 
         return config;
+    };
+
+    GeometryConfig GeometrySystem::GenerateCubeConfig(
+        f32 width, f32 height, f32 depth,
+        f32 tile_x, f32 tile_y,
+        std::string name, std::string material_name) {
+
+        if (width == 0) {
+            WARN("Width must be nonzero. Defaulting to one.");
+            width = 1.0f;
+        }
+        if (height == 0) {
+            WARN("Height must be nonzero. Defaulting to one.");
+            height = 1.0f;
+        }
+        if (depth == 0) {
+            WARN("Depth must be nonzero. Defaulting to one.");
+            depth = 1;
+        }
+        if (tile_x == 0) {
+            WARN("tile_x must be nonzero. Defaulting to one.");
+            tile_x = 1.0f;
+        }
+        if (tile_y == 0) {
+            WARN("tile_y must be nonzero. Defaulting to one.");
+            tile_y = 1.0f;
+        }
+
+        GeometryConfig config = {};
+        config.vertex_size = sizeof(Vertex3D);
+        config.vertex_count = 4 * 6;  // 4 verts per side, 6 sides
+        config.vertices = Platform::AMemory(sizeof(Vertex3D) * config.vertex_count);
+        config.index_size = sizeof(u32);
+        config.index_count = 6 * 6;  // 6 indices per side, 6 sides
+        config.indices = Platform::AMemory(sizeof(u32) * config.index_count);
+
+        f32 half_width = width * 0.5f;
+        f32 half_height = height * 0.5f;
+        f32 half_depth = depth * 0.5f;
+        f32 min_x = -half_width;
+        f32 min_y = -half_height;
+        f32 min_z = -half_depth;
+        f32 max_x = half_width;
+        f32 max_y = half_height;
+        f32 max_z = half_depth;
+        f32 min_uvx = 0.0f;
+        f32 min_uvy = 0.0f;
+        f32 max_uvx = tile_x;
+        f32 max_uvy = tile_y;
+
+        Vertex3D verts[24];
+
+        Platform::ZMemory(verts, sizeof(Vertex3D) * 24);
+
+        // Front face
+        verts[(0 * 4) + 0].position = (glm::vec3){min_x, min_y, max_z};
+        verts[(0 * 4) + 1].position = (glm::vec3){max_x, max_y, max_z};
+        verts[(0 * 4) + 2].position = (glm::vec3){min_x, max_y, max_z};
+        verts[(0 * 4) + 3].position = (glm::vec3){max_x, min_y, max_z};
+        verts[(0 * 4) + 0].texcoord = (glm::vec2){min_uvx, min_uvy};
+        verts[(0 * 4) + 1].texcoord = (glm::vec2){max_uvx, max_uvy};
+        verts[(0 * 4) + 2].texcoord = (glm::vec2){min_uvx, max_uvy};
+        verts[(0 * 4) + 3].texcoord = (glm::vec2){max_uvx, min_uvy};
+
+        // Back face
+        verts[(1 * 4) + 0].position = (glm::vec3){max_x, min_y, min_z};
+        verts[(1 * 4) + 1].position = (glm::vec3){min_x, max_y, min_z};
+        verts[(1 * 4) + 2].position = (glm::vec3){max_x, max_y, min_z};
+        verts[(1 * 4) + 3].position = (glm::vec3){min_x, min_y, min_z};
+        verts[(1 * 4) + 0].texcoord = (glm::vec2){min_uvx, min_uvy};
+        verts[(1 * 4) + 1].texcoord = (glm::vec2){max_uvx, max_uvy};
+        verts[(1 * 4) + 2].texcoord = (glm::vec2){min_uvx, max_uvy};
+        verts[(1 * 4) + 3].texcoord = (glm::vec2){max_uvx, min_uvy};
+
+        // Left
+        verts[(2 * 4) + 0].position = (glm::vec3){min_x, min_y, min_z};
+        verts[(2 * 4) + 1].position = (glm::vec3){min_x, max_y, max_z};
+        verts[(2 * 4) + 2].position = (glm::vec3){min_x, max_y, min_z};
+        verts[(2 * 4) + 3].position = (glm::vec3){min_x, min_y, max_z};
+        verts[(2 * 4) + 0].texcoord = (glm::vec2){min_uvx, min_uvy};
+        verts[(2 * 4) + 1].texcoord = (glm::vec2){max_uvx, max_uvy};
+        verts[(2 * 4) + 2].texcoord = (glm::vec2){min_uvx, max_uvy};
+        verts[(2 * 4) + 3].texcoord = (glm::vec2){max_uvx, min_uvy};
+
+        // Right face
+        verts[(3 * 4) + 0].position = (glm::vec3){max_x, min_y, max_z};
+        verts[(3 * 4) + 1].position = (glm::vec3){max_x, max_y, min_z};
+        verts[(3 * 4) + 2].position = (glm::vec3){max_x, max_y, max_z};
+        verts[(3 * 4) + 3].position = (glm::vec3){max_x, min_y, min_z};
+        verts[(3 * 4) + 0].texcoord = (glm::vec2){min_uvx, min_uvy};
+        verts[(3 * 4) + 1].texcoord = (glm::vec2){max_uvx, max_uvy};
+        verts[(3 * 4) + 2].texcoord = (glm::vec2){min_uvx, max_uvy};
+        verts[(3 * 4) + 3].texcoord = (glm::vec2){max_uvx, min_uvy};
+
+        // Bottom face
+        verts[(4 * 4) + 0].position = (glm::vec3){max_x, min_y, max_z};
+        verts[(4 * 4) + 1].position = (glm::vec3){min_x, min_y, min_z};
+        verts[(4 * 4) + 2].position = (glm::vec3){max_x, min_y, min_z};
+        verts[(4 * 4) + 3].position = (glm::vec3){min_x, min_y, max_z};
+        verts[(4 * 4) + 0].texcoord = (glm::vec2){min_uvx, min_uvy};
+        verts[(4 * 4) + 1].texcoord = (glm::vec2){max_uvx, max_uvy};
+        verts[(4 * 4) + 2].texcoord = (glm::vec2){min_uvx, max_uvy};
+        verts[(4 * 4) + 3].texcoord = (glm::vec2){max_uvx, min_uvy};
+
+        // Top face
+        verts[(5 * 4) + 0].position = (glm::vec3){min_x, max_y, max_z};
+        verts[(5 * 4) + 1].position = (glm::vec3){max_x, max_y, min_z};
+        verts[(5 * 4) + 2].position = (glm::vec3){min_x, max_y, min_z};
+        verts[(5 * 4) + 3].position = (glm::vec3){max_x, max_y, max_z};
+        verts[(5 * 4) + 0].texcoord = (glm::vec2){min_uvx, min_uvy};
+        verts[(5 * 4) + 1].texcoord = (glm::vec2){max_uvx, max_uvy};
+        verts[(5 * 4) + 2].texcoord = (glm::vec2){min_uvx, max_uvy};
+        verts[(5 * 4) + 3].texcoord = (glm::vec2){max_uvx, min_uvy};
+
+        for (u32 i = 0; i < 6; ++i) {
+            u32 v_offset = i * 4;
+            u32 i_offset = i * 6;
+            ((u32*)config.indices)[i_offset + 0] = v_offset + 0;
+            ((u32*)config.indices)[i_offset + 1] = v_offset + 1;
+            ((u32*)config.indices)[i_offset + 2] = v_offset + 2;
+            ((u32*)config.indices)[i_offset + 3] = v_offset + 0;
+            ((u32*)config.indices)[i_offset + 4] = v_offset + 3;
+            ((u32*)config.indices)[i_offset + 5] = v_offset + 1;
+        }
+        
+
+        Geometry::GenerateNormals(24, verts, 36, (u32*)config.indices);
+        Geometry::GenerateTangents(24, verts, 36, (u32*)config.indices);
+
+        Platform::CMemory(config.vertices, verts, config.vertex_size * config.vertex_count);
+
+        if (name.size() > 0) {
+            config.name = name;
+        } else {
+            config.name = DEFAULT_GEOMETRY_NAME;
+        }
+
+        if (material_name.size() > 0) {
+            config.material_name = material_name;
+        } else {
+            config.material_name = DEFAULT_MATERIAL_NAME;
+        }
+
+        return config;
+
+    };
+
+    void GeometrySystem::DisposeConfig(GeometryConfig& config) {
+        if (config.indices) {
+            Platform::FMemory(config.indices);
+        }
+        if (config.vertices) {
+            Platform::FMemory(config.vertices);
+        }
     };
 }

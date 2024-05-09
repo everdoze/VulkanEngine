@@ -44,15 +44,14 @@ namespace Engine {
             glm::mat4 ui_projection;
             glm::mat4 ui_view;
 
+            glm::vec3 camera_position;
+            glm::vec3 camera_euler;
         private:
             void GenerateProjectionMatrix();
             void GenerateViewMatrix();
 
             void GenerateUIProjectionMatrix();
             void GenerateUIViewMatrix();
-
-            glm::vec3 camera_position = glm::vec3(0, 0, 30.0f);
-            glm::vec3 camera_euler = glm::vec3(0, 0, 0);
 
             // TODO: Probably need to configurate these
             f32 near_clip = 0.1f;

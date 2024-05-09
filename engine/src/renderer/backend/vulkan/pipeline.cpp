@@ -2,7 +2,7 @@
 
 #include "vulkan.hpp"
 #include "platform/platform.hpp"
-#include "renderer/renderer_types.inl"
+#include "renderer/renderer_types.hpp"
 #include "helpers.hpp"
 
 namespace Engine {

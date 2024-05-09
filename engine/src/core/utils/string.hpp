@@ -40,5 +40,10 @@ namespace Engine {
 
     std::pair<std::string, std::string> MidString(std::string& str, const char& separator);
     std::vector<std::string> SplitString(std::string& str, const char& delimiter);
+
+    b8 StringIEquals(const std::string& a, const std::string& b);
+    std::string GetFullDirectoryFromPath(const std::string& path);
+    std::string GetFilenameFromPath(const std::string& path);
+    std::string GetStripFilenameFromPath(const std::string& path);
 };
 

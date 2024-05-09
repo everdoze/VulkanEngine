@@ -110,7 +110,7 @@ namespace Engine {
             virtual void BindInstance(u32 instance_id) = 0;
 
             virtual void ApplyGlobals() = 0;
-            virtual void ApplyInstance() = 0;
+            virtual void ApplyInstance(b8 needs_update) = 0;
 
             virtual u32 AcquireInstanceResources() = 0;
             virtual void ReleaseInstanceResources(u32 instance_id) = 0;
@@ -121,7 +121,7 @@ namespace Engine {
             std::string name;
             b8 use_instances;
             b8 use_locals;
-
+            
             std::vector<ShaderUniformConfig> uniforms;
             std::unordered_map<std::string, ShaderUniformConfig*> uniforms_lookup;
             std::vector<ShaderStageConfig> stages;

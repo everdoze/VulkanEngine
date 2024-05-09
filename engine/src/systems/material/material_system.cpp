@@ -30,8 +30,8 @@ namespace Engine {
         MaterialCreateInfo mat_create_info = {};
         mat_create_info.name = DEFAULT_MATERIAL_NAME;
         mat_create_info.diffuse_color = glm::vec4(1, 1, 1, 1);
-        mat_create_info.use = TextureUse::MAP_DIFFUSE;
-        mat_create_info.texture = TextureSystem::GetInstance()->GetDefaultTexture();
+        mat_create_info.textures.push_back((TextureMap){TextureSystem::GetInstance()->GetDefaultDiffuse(), TextureUse::MAP_DIFFUSE});
+        mat_create_info.textures.push_back((TextureMap){TextureSystem::GetInstance()->GetDefaultSpecular(), TextureUse::MAP_SPECULAR});
         mat_create_info.shader = ShaderSystem::GetInstance()->GetShader(BUILTIN_MATERIAL_SHADER_NAME);
 
         default_material = RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
@@ -69,7 +69,11 @@ namespace Engine {
         }
         MaterialConfig config = resource->GetConfig();
         delete resource;
-        return LoadMaterial(config);
+        Material* material = LoadMaterial(config);
+        if (material) {
+            registered_materials[name] = material;
+        }
+        return material;
     };
 
     Material* MaterialSystem::LoadMaterial(MaterialConfig& config) {
@@ -77,28 +81,69 @@ namespace Engine {
         mat_create_info.shader = ShaderSystem::GetInstance()->GetShader(config.shader_name);
         mat_create_info.name = config.name;
         mat_create_info.diffuse_color = config.diffuse_color;
+        mat_create_info.shininess = config.shininess;
 
         TextureSystem* ts = TextureSystem::GetInstance();
 
-        if (config.name.size()) {
-            mat_create_info.use = TextureUse::MAP_DIFFUSE;
-            mat_create_info.texture = ts->AcquireTexture(config.diffuse_map_name, true);
-            if (!mat_create_info.texture) {
-                WARN("Unable to load texture '%s' for material '%s', using default.", config.diffuse_map_name.c_str(), mat_create_info.name.c_str());
-                mat_create_info.texture = ts->GetDefaultTexture();
-            }
-        } else {
-            mat_create_info.texture = nullptr;
-            mat_create_info.use = TextureUse::UNKNOWN;
+        if (!config.name.size()) {
+            ERROR("MaterialSystem::LoadMaterial - material can't be loaded without name.");
+            return nullptr;
         }
 
-        Material* material = RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
-        if (material) {
-            material->AcquireInstanceResources();
-            return material;
+        if (config.diffuse_map_name.size()) {
+            Texture* diffuse = ts->AcquireTexture(config.diffuse_map_name, true);
+            if (!diffuse) {
+                WARN("Unable to load texture '%s' for material '%s', using default.", config.diffuse_map_name.c_str(), mat_create_info.name.c_str());
+                diffuse = ts->GetDefaultDiffuse();
+            }
+            mat_create_info.textures.push_back(
+                (TextureMap){
+                    diffuse, 
+                    TextureUse::MAP_DIFFUSE
+                }
+            );
         }
-        delete material;
-        return nullptr;
+
+        
+        if (config.specular_map_name.size()) {
+            Texture* specular;
+            if (config.specular_map_name == "default") {
+                specular = ts->GetDefaultSpecular();
+            } else {
+                specular = ts->AcquireTexture(config.specular_map_name, true);
+            }
+            if (!specular) {
+                WARN("Unable to load texture '%s' for material '%s', using default.", config.specular_map_name.c_str(), mat_create_info.name.c_str());
+                specular = ts->GetDefaultSpecular();
+            }
+            mat_create_info.textures.push_back(
+                (TextureMap){
+                    specular, 
+                    TextureUse::MAP_SPECULAR
+                }
+            );
+        }
+
+         if (config.normal_map_name.size()) {
+            Texture* normal;
+            if (config.normal_map_name == "default") {
+                normal = ts->GetDefaultNormal();
+            } else {
+                normal = ts->AcquireTexture(config.normal_map_name, true);
+            }
+            if (!normal) {
+                WARN("Unable to load texture '%s' for material '%s', using default.", config.normal_map_name.c_str(), mat_create_info.name.c_str());
+                normal = ts->GetDefaultNormal();
+            }
+            mat_create_info.textures.push_back(
+                (TextureMap){
+                    normal, 
+                    TextureUse::MAP_NORMAL
+                }
+            );
+        }
+        
+        return RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
     };
 
     Material* MaterialSystem::AcquireMaterialFromConfig(MaterialConfig& config) {

@@ -49,7 +49,7 @@ namespace Engine {
     Texture* TextureSystem::AcquireTexture(std::string name, b8 auto_release) {
         if (name == DEFAULT_TEXTURE_NAME) {
             WARN("TextureSystem::AcquireTexture called for default texture.");
-            return default_texture;
+            return default_diffuse;
         }
 
         if (registered_textures[name]) {
@@ -92,23 +92,23 @@ namespace Engine {
         Platform::SMemory(pixels, 255, sizeof(u8) * pixel_count * channels);
 
         // Each pixel.
-        for (u64 row = 0; row < tex_dimension; ++row) {
-            for (u64 col = 0; col < tex_dimension; ++col) {
-                u64 index = (row * tex_dimension) + col;
-                u64 index_bpp = index * channels;
-                if (row % 2) {
-                    if (col % 2) {
-                        pixels[index_bpp + 0] = 0;
-                        pixels[index_bpp + 1] = 0;
-                    }
-                } else {
-                    if (!(col % 2)) {
-                        pixels[index_bpp + 0] = 0;
-                        pixels[index_bpp + 1] = 0;
-                    }
-                }
-            }
-        }
+        // for (u64 row = 0; row < tex_dimension; ++row) {
+        //     for (u64 col = 0; col < tex_dimension; ++col) {
+        //         u64 index = (row * tex_dimension) + col;
+        //         u64 index_bpp = index * channels;
+        //         if (row % 2) {
+        //             if (col % 2) {
+        //                 pixels[index_bpp + 0] = 0;
+        //                 pixels[index_bpp + 1] = 0;
+        //             }
+        //         } else {
+        //             if (!(col % 2)) {
+        //                 pixels[index_bpp + 0] = 0;
+        //                 pixels[index_bpp + 1] = 0;
+        //             }
+        //         }
+        //     }
+        // }
 
         TextureCreateInfo create_info;
         create_info.name = DEFAULT_TEXTURE_NAME;
@@ -117,13 +117,53 @@ namespace Engine {
         create_info.channel_count = channels;
         create_info.has_transparency = false;
         create_info.pixels = pixels;
-        default_texture = RendererFrontend::GetInstance()->CreateTexture(create_info);
+        default_diffuse = RendererFrontend::GetInstance()->CreateTexture(create_info);
+
+        u8 spec_pixels[16 * 16 * 4];
+        // Default specular map is black
+        Platform::ZMemory(spec_pixels, sizeof(u8) * 16 * 16 * 4);
+        TextureCreateInfo spec_create_info;
+        spec_create_info.name = DEFAULT_SPECULAR_NAME;
+        spec_create_info.width = 16;
+        spec_create_info.height = 16;
+        spec_create_info.channel_count = 4;
+        spec_create_info.has_transparency = false;
+        spec_create_info.pixels = spec_pixels;
+        default_specular = RendererFrontend::GetInstance()->CreateTexture(spec_create_info);
+
+        // Normal texture.
+        u8 normal_pixels[16 * 16 * 4];  // w * h * channels
+        Platform::ZMemory(normal_pixels, sizeof(u8) * 16 * 16 * 4);
+
+        // Each pixel.
+        for (u64 row = 0; row < 16; ++row) {
+            for (u64 col = 0; col < 16; ++col) {
+                u64 index = (row * 16) + col;
+                u64 index_bpp = index * channels;
+                // Set blue, z-axis by default and alpha.
+                normal_pixels[index_bpp + 0] = 128;
+                normal_pixels[index_bpp + 1] = 128;
+                normal_pixels[index_bpp + 2] = 255;
+                normal_pixels[index_bpp + 3] = 255;
+            }
+        }
+
+        TextureCreateInfo norm_create_info;
+        norm_create_info.name = DEFAULT_NORMAL_NAME;
+        norm_create_info.width = 16;
+        norm_create_info.height = 16;
+        norm_create_info.channel_count = 4;
+        norm_create_info.has_transparency = false;
+        norm_create_info.pixels = normal_pixels;
+        default_normal = RendererFrontend::GetInstance()->CreateTexture(norm_create_info);
 
         return true;
     };
 
     void TextureSystem::DestroyDefaultTextures() {
-        delete default_texture;
+        delete default_diffuse;
+        delete default_specular;
+        delete default_normal;
     };
 
     Texture* TextureSystem::LoadTexture(std::string texture_name) {

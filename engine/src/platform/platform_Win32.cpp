@@ -26,6 +26,10 @@ namespace Engine {
             HINSTANCE h_instance;
             HWND hwnd;
             VkSurfaceKHR surface;
+            u32 window_style;
+            u32 window_ex_style;
+            RECT border_rect;
+            b8 message_pumping = false;
     };
     static Win32PlatformState* w32State = nullptr;
 
@@ -80,25 +84,25 @@ namespace Engine {
 
         srand(time(NULL));
 
-        u32 window_style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION;
-        u32 window_ex_style = WS_EX_APPWINDOW;
+        w32State->window_style = WS_OVERLAPPED | WS_SYSMENU | WS_CAPTION;
+        w32State->window_ex_style = WS_EX_APPWINDOW;
 
-        window_style |= WS_MAXIMIZEBOX;
-        window_style |= WS_MINIMIZEBOX;
-        window_style |= WS_THICKFRAME;
+        w32State->window_style |= WS_MAXIMIZEBOX;
+        w32State->window_style |= WS_MINIMIZEBOX;
+        w32State->window_style |= WS_THICKFRAME;
 
-        RECT border_rect = {0, 0, 0, 0};
-        AdjustWindowRectEx(&border_rect, window_style, 0, window_ex_style);
+        RECT* brect = &w32State->border_rect;
+        AdjustWindowRectEx(brect, w32State->window_style, 0, w32State->window_ex_style);
 
-        window_x += border_rect.left;
-        window_y += border_rect.top;
+        window_x += brect->left;
+        window_y += brect->top;
 
-        window_width += border_rect.right - border_rect.left;
-        window_height += border_rect.bottom - border_rect.top;
+        window_width += brect->right - brect->left;
+        window_height += brect->bottom - brect->top;
 
         HWND handle = CreateWindowExA(
-            window_ex_style, "engine_window", name.c_str(),
-            window_style, window_x, window_y, window_width, window_height,
+            w32State->window_ex_style, "engine_window", name.c_str(),
+            w32State->window_style, window_x, window_y, window_width, window_height,
             0, 0, w32State->h_instance, 0);
 
         if (handle == 0) {
@@ -166,6 +170,8 @@ namespace Engine {
         ConsoleWriteMessage(text, color, true);
     };
 
+    /// @brief Setup system clock
+    /// @return true if success
     b8 Platform::ClockSetup() {
         LARGE_INTEGER frequency;
         QueryPerformanceFrequency(&frequency);
@@ -272,7 +278,7 @@ namespace Engine {
                 // //Mouse move
                 i32 x_position = GET_X_LPARAM(l_param);
                 i32 y_position = GET_Y_LPARAM(l_param);
-                
+
                 InputSystem::GetInstance()->ProcessMouseMove(x_position, y_position);
             } break;
             case WM_MOUSEWHEEL: {
@@ -315,6 +321,20 @@ namespace Engine {
         }
 
         return DefWindowProcA(hwnd, msg, w_param, l_param);
+    };
+
+    void Platform::CursorVisibility(b8 show) {
+        ShowCursor(show);
+    };
+
+    b8 Platform::SetCursorPosition(i32 x, i32 y) {
+        RECT w_rect;
+        GetWindowRect(w32State->hwnd, &w_rect);
+        b8 result = SetCursorPos(x + (w_rect.left - w32State->border_rect.left), y + (w_rect.top - w32State->border_rect.top));
+        if (result) {
+            InputSystem::GetInstance()->ProcessMouseMove(x, y);
+        }
+        return result;
     };
 
     void Platform::ZMemory(void* block, u64 size) {

@@ -6,7 +6,7 @@
 #include "resources/material/material.hpp"
 #include "resources/geometry/geometry.hpp"
 #include "resources/shader/shader.hpp"
-#include "renderer_types.inl"
+#include "renderer_types.hpp"
 
 namespace Engine {
 
@@ -42,6 +42,8 @@ namespace Engine {
             virtual b8 BeginFrame(f32 delta_time) = 0;
             virtual b8 EndFrame(f32 delta_time) = 0;
             virtual void DrawGeometry(GeometryRenderData data) = 0;
+            virtual void NextFrame() = 0;
+            virtual u32 GetFrame() = 0;
 
             u32 GetFrameWidth() { return width; };
             u32 GetFrameHeight() { return height; };
@@ -57,15 +59,23 @@ namespace Engine {
             u32 height;
             u32 cached_width;
             u32 cached_height;
+            
+
+        friend class RendererFrontend;
     };
 
     class RendererFrontend {
         public: 
+            RendererFrontend();
+            ~RendererFrontend();
+
             static b8 Initialize(RendererSetup setup, RendererBackendType type);
             static void Shutdown();
             static RendererFrontend* GetInstance();
             static RendererBackend* GetBackend() { return instance->backend; };
             static b8 DrawFrame(RenderPacket* packet);
+            static u32 GetFrameHeightS();
+            static u32 GetFrameWidthS();
 
             void Resized(u16 width, u16 height);
 
@@ -85,6 +95,8 @@ namespace Engine {
 
             void InitializeRenderer();
 
+            b8 OnDebugEvent(EventType type, EventContext& context);
+
             b8 CreateBackend(RendererSetup setup, RendererBackendType type);
             void ShutdownBackend();
 
@@ -95,6 +107,9 @@ namespace Engine {
             RendererBackend* backend;
 
             Camera* camera;
+
+            glm::vec4 ambient_color;
+            u32 shader_debug_mode;
     };
 
 };

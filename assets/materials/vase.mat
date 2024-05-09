@@ -1,0 +1,10 @@
+<Version>0.1</Version>
+<Material 
+    name="vase" 
+    diffuse_color="0.588000 0.588000 0.588000 1.000000" 
+    diffuse_map_name="vase_dif" 
+    specular_map_name="vase_spec"
+    normal_map_name="vase_ddn"
+    shininess="10.000000">
+    <Shader name="Builtin.MaterialShader" />
+</Material>

@@ -197,4 +197,52 @@ namespace Engine {
         return strings;
     };
 
+    b8 ICharEquals(char a, char b) {
+        return std::tolower(static_cast<u8>(a)) == std::tolower(static_cast<u8>(b));
+    };
+
+    b8 StringIEquals(const std::string& a, const std::string& b) {
+        return std::equal(a.begin(), a.end(), b.begin(), b.end(), ICharEquals);
+    };
+
+    std::string GetFullDirectoryFromPath(const std::string& path) {
+        for (u32 i = path.size(); i >= 0; --i) {
+            if (path[i] == '/' || path[i] == '\\') {
+                return path.substr(0, i+1);
+            }
+        }
+        return "";
+    };
+    
+    std::string GetFilenameFromPath(const std::string& path) {
+        for (u32 i = path.size(); i >= 0; --i) {
+            if (path[i] == '/' || path[i] == '\\') {
+                return path.substr(i+1, path.size() - i);
+            }
+        }
+        return "";
+    };
+
+    std::string GetStripFilenameFromPath(const std::string& path) {
+        u32 filename_start = 0;
+        u32 size = 0;
+        b8 found = false;
+        for (u32 i = path.size(); i >= 0; --i) {
+            if (path[i] == '.') {
+                found = true;
+            }
+            if (path[i] == '/' || path[i] == '\\') {
+                filename_start = i;
+                break;
+            }
+            if (found) {
+                size++;
+            }
+        }
+        if (found) {
+            return path.substr(filename_start, size);
+        }
+        return "";
+    };
+
 };

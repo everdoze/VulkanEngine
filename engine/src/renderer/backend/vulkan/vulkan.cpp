@@ -3,7 +3,7 @@
 #include "platform/platform.hpp"
 #include "core/logger/logger.hpp"
 #include "helpers.hpp"
-#include "renderer/renderer_types.inl"
+#include "renderer/renderer_types.hpp"
 #include "texture.hpp"
 #include "material.hpp"
 
@@ -59,6 +59,7 @@ namespace Engine {
         allocator = nullptr;
         device = nullptr;
         swapchain = nullptr;
+        current_frame = INVALID_ID;
     };
 
     b8 VulkanRendererBackend::Initialize() {
@@ -448,8 +449,6 @@ namespace Engine {
             return false;
         }
 
-        NextFrame();
-
         return true;
     };
 
@@ -773,7 +772,7 @@ namespace Engine {
                 device->graphics_command_pool, 
                 0, device->graphics_queue, 
                 object_index_buffer, 
-                create_info.vertex_size, info.indices);
+                create_info.index_size, info.indices);
         }
 
         VulkanGeometry* g = new VulkanGeometry(info, create_info);

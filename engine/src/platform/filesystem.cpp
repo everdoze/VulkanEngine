@@ -9,6 +9,8 @@ namespace Engine {
         if (!binary || !handle.is_open() || mode != FileMode::READ) {
             return std::vector<c8>();
         }
+        
+        handle.seekg(0, std::ios::end);
         std::ifstream::pos_type pos = handle.tellg();
 
         if (pos == 0) {
@@ -21,6 +23,16 @@ namespace Engine {
         handle.read(result.data(), pos);
 
         return result;
+    }
+
+    b8 File::ReadBytes(u32 size, void* data) {
+        if (!binary || !handle.is_open() || mode != FileMode::READ) {
+            return false;
+        }
+        
+        handle.read((char*)data, size);
+
+        return true;
     };
 
     b8 File::WriteLine(std::string line) {
@@ -28,6 +40,14 @@ namespace Engine {
             return false;
         }
         handle << line;
+        return true;
+    };
+
+    b8 File::Write(u32 size, void* data) {
+        if (!handle) {
+            return false;
+        }
+        handle.write((c8*)data, size);
         return true;
     };
 
@@ -69,7 +89,8 @@ namespace Engine {
         }
 
         if (!this->handle.fail()) {
-            ready = true;
+            this->handle.seekg(0, std::ios::beg);
+            this->ready = true;
         }
     }; 
 

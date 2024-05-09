@@ -12,6 +12,7 @@
 #include <functional>
 #include <string_view>
 #include <map>
+#include <thread>
 
 #include <string>
 #include <cstring>
@@ -89,6 +90,7 @@ typedef bool b8;
 #define INVALID_ID 4294967295U
 #define INVALID_ID_U16 65535U
 #define INVALID_ID_U8 255U
+#define FLOAT_EPSILON 1.192092896e-07f
 
 #define BIT(x) (1 << x)
 

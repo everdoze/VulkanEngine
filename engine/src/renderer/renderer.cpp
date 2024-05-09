@@ -4,6 +4,7 @@
 #include "core/logger/logger.hpp"
 #include "platform/platform.hpp"
 #include "core/utils/string.hpp"
+#include "resources/mesh/mesh.hpp"
 
 #include "systems/shader/shader_system.hpp"
 // TODO: TEMP
@@ -15,12 +16,36 @@ namespace Engine {
 
     RendererFrontend* RendererFrontend::instance = nullptr;
 
+    RendererFrontend::RendererFrontend() {
+        shader_debug_mode = 0;
+
+        EventSystem::GetInstance()->RegisterEvent(
+            EventType::Debug2,
+            "Renderer",
+            EventBind(OnDebugEvent)
+        );
+    };
+
+    RendererFrontend::~RendererFrontend() {
+        EventSystem::GetInstance()->UnregisterEvent(
+            EventType::Debug2,
+            "Renderer"
+        );
+    };
+
+    b8 RendererFrontend::OnDebugEvent(EventType type, EventContext& context) {
+        shader_debug_mode++;
+        shader_debug_mode %= 5;
+        return true;
+    };
+
     RendererFrontend* RendererFrontend::GetInstance() {
         if (instance) {
             return instance;
         }
         return nullptr;
     };
+    
 
     b8 RendererFrontend::Initialize(RendererSetup setup, RendererBackendType type) {
         instance = new RendererFrontend();
@@ -45,6 +70,8 @@ namespace Engine {
         ShaderSystem* shader_system = ShaderSystem::GetInstance();
         Shader* material_shader = shader_system->CreateShader(BUILTIN_MATERIAL_SHADER_NAME);
         Shader* ui_shader = shader_system->CreateShader(BUILTIN_UI_SHADER_NAME);
+
+        ambient_color = {0.25f, 0.25f, 0.25f, 1.0f};
     };
 
     b8 RendererFrontend::CreateBackend(RendererSetup setup, RendererBackendType type) {
@@ -93,7 +120,7 @@ namespace Engine {
     b8 RendererFrontend::DrawFrame(RenderPacket* packet) {
         RendererFrontend* instance = RendererFrontend::GetInstance();
         ShaderSystem* shader_system = ShaderSystem::GetInstance();
-
+        instance->backend->NextFrame();
         if (instance->BeginFrame(packet->delta_time)) {
             
             instance->camera->OnUpdate();
@@ -105,12 +132,16 @@ namespace Engine {
             }
 
             shader_system->UseShader(BUILTIN_MATERIAL_SHADER_NAME);
-
-            shader_system->ApplyGlobals(
-                BUILTIN_MATERIAL_SHADER_NAME,
-                &instance->camera->projection,
-                &instance->camera->view);
             
+            ParamsData data(5);
+            data[0] = (Param){"projection", &instance->camera->projection};
+            data[1] = (Param){"view", &instance->camera->view};
+            data[2] = (Param){"ambient_color", &instance->ambient_color};
+            data[3] = (Param){"view_position", &instance->camera->camera_position};
+            data[4] = (Param){"mode", &instance->shader_debug_mode};
+
+            shader_system->ApplyGlobals(BUILTIN_MATERIAL_SHADER_NAME, data);
+            u32 backend_frame = instance->backend->GetFrame();
             for (u32 i = 0; i < packet->geometries.size(); ++i) {
                 if (!packet->geometries[i].geometry) {
                     ERROR("RendererFrontend::DrawFrame - something wrong with geometry at packet->geometries[%i], skipping...", i);
@@ -122,8 +153,13 @@ namespace Engine {
                     material = MaterialSystem::GetInstance()->GetDefaultMaterial();
                 }
 
-                material->ApplyInstance();
+                if (material->GetInternalId() == 3) {
+                        u32 i = 0;
+                        i++;
+                    }
 
+                material->ApplyInstance(backend_frame);
+            
                 material->ApplyLocal(&packet->geometries[i].model);
 
                 instance->backend->DrawGeometry(packet->geometries[i]);
@@ -142,11 +178,12 @@ namespace Engine {
             }
 
             shader_system->UseShader(BUILTIN_UI_SHADER_NAME);
+            
+            ParamsData ui_data(2);
+            ui_data[0] = (Param){"projection", &instance->camera->ui_projection};
+            ui_data[1] = (Param){"view", &instance->camera->ui_view};
 
-            shader_system->ApplyGlobals(
-                BUILTIN_UI_SHADER_NAME,
-                &instance->camera->ui_projection,
-                &instance->camera->ui_view);
+            shader_system->ApplyGlobals(BUILTIN_UI_SHADER_NAME, ui_data);
 
             for (u32 i = 0; i < packet->ui_geometries.size(); ++i) {
                 if (!packet->ui_geometries[i].geometry) {
@@ -159,7 +196,7 @@ namespace Engine {
                     material = MaterialSystem::GetInstance()->GetDefaultMaterial();
                 }
 
-                material->ApplyInstance();
+                material->ApplyInstance(backend_frame);
 
                 material->ApplyLocal(&packet->ui_geometries[i].model);
 
@@ -240,6 +277,22 @@ namespace Engine {
             return nullptr;
         }
         return backend->CreateShader(config);
+    };
+
+    u32 RendererFrontend::GetFrameHeightS() {
+        if (!instance) {
+            ERROR("RendererFrontend::GetFrameHeight - frontend not initialized!");
+            return 0;
+        }
+        return instance->GetFrameHeight();
+    };
+
+    u32 RendererFrontend::GetFrameWidthS() {
+        if (!instance) {
+            ERROR("RendererFrontend::GetFrameHeight - frontend not initialized!");
+            return 0;
+        }
+        return instance->GetFrameWidth();
     };
 
 };
