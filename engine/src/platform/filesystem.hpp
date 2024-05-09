@@ -21,6 +21,7 @@ namespace Engine {
             std::vector<std::string> ReadAllLines();
 
             std::vector<c8> ReadAllBytes();
+            b8 ReadBytes(u32 size, void* data);
 
             b8 WriteLine(std::string line);
             b8 Write(u32 size, void* data);

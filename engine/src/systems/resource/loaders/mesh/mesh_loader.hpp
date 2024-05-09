@@ -42,8 +42,9 @@ namespace Engine {
             Resource* Load(std::string name);
         
         protected:
-            Resource* LoadOBJ(const std::string& file_path, const std::string& name);
+            MeshResource* LoadOBJ(const std::string& file_path, const std::string& name);
             b8 WriteToE3DM(const std::string& file_path, const std::string& name, GeometryConfigs& configs);
+            MeshResource* LoadE3DM(const std::string& file_path, const std::string& name);
 
     };
 

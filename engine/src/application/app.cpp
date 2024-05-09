@@ -199,6 +199,15 @@ namespace Engine {
             meshes.push_back(new Mesh(sponza));
             delete mesh_resource;
 
+            MeshResource* mesh_resource2 = (MeshResource*)ResourceSystem::GetInstance()->LoadResource(ResourceType::MESH, "falcon");
+            MeshCreateConfig falcon{};
+            GeometryConfigs configs2 = mesh_resource2->GetConfigs();
+            for (u32 i = 0; i < configs2.size(); ++i) {
+                falcon.geometries.push_back(gs->AcquireGeometryFromConfig(configs2[i], true));
+            }
+            falcon.transform = new Transform(glm::vec3(30,0,0), glm::identity<glm::quat>());
+            meshes.push_back(new Mesh(falcon));
+            delete mesh_resource2;
 
             // Load up some test UI geometry.
             GeometryConfig ui_config;

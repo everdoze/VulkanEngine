@@ -17,8 +17,8 @@ namespace Engine {
         void* vertices;
         u32 index_size;
         u32 index_count;
-        GeometryExtent extent;
         void* indices;
+        GeometryExtent extent;
         std::string name;
         std::string material_name;
     };

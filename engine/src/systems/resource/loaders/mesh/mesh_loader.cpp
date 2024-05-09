@@ -16,36 +16,188 @@ namespace Engine {
 
         const char* format = "%s/%s%s";
 
-        std::vector<SupportedMeshFileType> mesh_file_types(1);
-        // mesh_file_types[0] = (SupportedMeshFileType){".e3dm", MeshFileType::E3DM, true};
-        mesh_file_types[0] = (SupportedMeshFileType){".obj", MeshFileType::OBJ, false};
+        std::vector<SupportedMeshFileType> mesh_file_types(2);
+        mesh_file_types[0] = (SupportedMeshFileType){".e3dm", MeshFileType::E3DM, true};
+        mesh_file_types[1] = (SupportedMeshFileType){".obj", MeshFileType::OBJ, false};
 
         // File* file = nullptr;
 
         std::string file_path;
         MeshFileType type = MeshFileType::NOT_FOUND;
 
+        MeshResource* resource = nullptr;
+
         for (u32 i = 0; i < mesh_file_types.size(); ++i) {
             file_path = StringFormat(format, type_path.c_str(), name.c_str(), mesh_file_types[i].ext.c_str());
             if (FileSystem::FileExists(file_path)) {
-                // file = FileSystem::FileOpen(file_path, FileMode::READ, mesh_file_types[i].is_binary);
-                return LoadOBJ(file_path, name);
+                switch (mesh_file_types[i].type) {
+                    case MeshFileType::E3DM: {
+                        resource = LoadE3DM(file_path, name);
+                    } break;
+
+                    case MeshFileType::OBJ: {
+                        resource = LoadOBJ(file_path, name);
+                        std::string e3dm_path = StringFormat(format, type_path.c_str(), name.c_str(), ".e3dm");
+                        WriteToE3DM(e3dm_path, name, resource->GetConfigs());
+                    } break;
+
+                    default: {
+                        ERROR("MeshLoader::Load: Unknown file type.");
+                    }
+                }
+
+                if (resource) {
+                    break;
+                }
             }
         }
-        
 
-        ERROR("MeshLoader::Load - no mesh file found for mesh '%s'", name.c_str());
-        return nullptr;
+        if (!resource) {
+            ERROR("MeshLoader::Load - no mesh file found for mesh '%s'", name.c_str());
+            return nullptr;
+        }
+
+        return resource;
     };  
     
-    b8 WriteToE3DM(const std::string& file_path, const std::string& name, GeometryConfigs& configs) {
-        
+    b8 MeshLoader::WriteToE3DM(const std::string& file_path, const std::string& name, GeometryConfigs& configs) {
+        if (FileSystem::FileExists(file_path)) {
+            INFO("MeshLoader::WriteToE3DM: File '%s' already exist and will be overwritten.", name.c_str());
+        }
 
-        u8 version = 0x0001U;
+        File* file = FileSystem::FileOpen(file_path, FileMode::WRITE, true);
+        if (!file) {
+            ERROR("MeshLoader::WriteToE3DM: Unable to open file '%s' in write mode.", file_path.c_str());
+            return false;  
+        } 
 
+        INFO("MeshLoader::WriteToE3DM: Writing to '%s'.", file_path.c_str());
+
+        u16 version = 0x0001U;
+
+        // Version
+        file->Write(sizeof(u16), &version);
+
+        // Name
+        u32 name_length = name.size();
+        file->Write(sizeof(u32), &name_length);
+        file->Write(sizeof(char) * name_length, (void*)name.c_str());
+
+        // Configs count
+        u64 configs_count = configs.size();
+        file->Write(sizeof(u64), &configs_count);
+
+        // Configs
+        for (auto config : configs) {
+            
+            // Vertex count
+            file->Write(sizeof(u32), &config.vertex_count);
+
+            // Vertex size
+            file->Write(sizeof(u32), &config.vertex_size);
+
+            // Vertices
+            file->Write(config.vertex_count * config.vertex_size, config.vertices);
+
+            // Index count
+            file->Write(sizeof(u32), &config.index_count);
+
+            // Index size
+            file->Write(sizeof(u32), &config.index_size);
+
+            // Indices
+            file->Write(config.index_count * config.index_size, config.indices);
+
+            // Config name
+            u32 config_name_length = config.name.size();
+            file->Write(sizeof(u32), &config_name_length);
+            file->Write(sizeof(char) * config_name_length, (void*)config.name.c_str());
+
+            // Material name
+            u32 config_material_name_length = config.material_name.size();
+            file->Write(sizeof(u32), &config_material_name_length);
+            file->Write(sizeof(char) * config_material_name_length, (void*)config.material_name.c_str());
+
+        }
+
+        FileSystem::FileClose(file);
+
+        return true;
     };
 
-    Resource* MeshLoader::LoadOBJ(const std::string& file_path, const std::string& name) {
+    MeshResource* MeshLoader::LoadE3DM(const std::string& file_path, const std::string& name) {
+        File* file = FileSystem::FileOpen(file_path, FileMode::READ, true);
+        if (!file) {
+            ERROR("MeshLoader::LoadE3DM: Unable to open file '%s' in read mode.", file_path.c_str());
+            return nullptr;  
+        }
+
+        // Version
+        u16 version = 0;
+        file->ReadBytes(sizeof(u16), &version);
+
+        // Name
+        u32 name_length = 0;
+        file->ReadBytes(sizeof(u32), &name_length);
+
+        std::string file_name;
+        file_name.resize(name_length);
+        file->ReadBytes(sizeof(char) * name_length, (void*)file_name.c_str());
+
+        // Configs
+        u64 configs_count = 0;
+        file->ReadBytes(sizeof(u64), &configs_count);
+
+        GeometryConfigs configs;
+        configs.reserve(configs_count);
+
+        for (u32 i = 0; i < configs_count; ++i) {
+
+            GeometryConfig config;
+
+            // Vertex count
+            file->ReadBytes(sizeof(u32), &config.vertex_count);
+
+            // Vertex size
+            file->ReadBytes(sizeof(u32), &config.vertex_size);
+
+            // Vertices
+            u32 vert_array_size = config.vertex_count * config.vertex_size;
+            config.vertices = Platform::AMemory(vert_array_size);
+            file->ReadBytes(vert_array_size, config.vertices);
+
+            // Index count
+            file->ReadBytes(sizeof(u32), &config.index_count);
+
+            // Index size
+            file->ReadBytes(sizeof(u32), &config.index_size);
+
+            // Indices
+            u32 idx_array_size = config.index_count * config.index_size;
+            config.indices = Platform::AMemory(idx_array_size);
+            file->ReadBytes(idx_array_size, config.indices);
+
+            // Config name
+            u32 config_name_size = 0;
+            file->ReadBytes(sizeof(u32), &config_name_size);
+
+            config.name.resize(config_name_size);
+            file->ReadBytes(sizeof(char) * config_name_size, (void*)config.name.c_str());
+
+            // Config material name
+            u32 config_material_name_size = 0;
+            file->ReadBytes(sizeof(u32), &config_material_name_size);
+
+            config.material_name.resize(config_material_name_size);
+            file->ReadBytes(sizeof(char) * config_material_name_size, (void*)config.material_name.c_str());
+
+            configs.push_back(config);
+        }
+
+        return new MeshResource(id, name, file_path, configs);
+    };
+
+    MeshResource* MeshLoader::LoadOBJ(const std::string& file_path, const std::string& name) {
         tinyobj::attrib_t attributes;
         std::vector<tinyobj::shape_t> shapes;
         std::vector<tinyobj::material_t> materials;
@@ -173,120 +325,5 @@ namespace Engine {
         }
 
         return new MeshResource(id, name, file_path, configs);
-    //     std::vector<glm::vec3> positions;
-    //     positions.reserve(16384);
-
-    //     std::vector<glm::vec3> normals;
-    //     normals.reserve(16384);
-
-    //     std::vector<glm::vec2> tex_coords;
-    //     tex_coords.reserve(16384);
-
-    //     std::vector<MeshGroup> groups;
-    //     groups.reserve(4); 
-
-    //     std::string line;
-    //     while (true) {
-    //         if (!file->ReadLine(line)) {
-    //             break;
-    //         }
-
-    //         if (!line.size()) {
-    //             continue;
-    //         }
-
-    //         if (line[0] == '#') {
-    //             continue;
-    //         }
-
-    //         u8 first_char = line[0];
-    //         switch (first_char) {
-    //             case 'v': {
-    //                 u8 second_char = line[1];
-    //                 switch (second_char) {
-    //                     case ' ': {
-    //                         glm::vec3 pos;
-    //                         c8 tmp[2];
-    //                         sscanf(
-    //                             line.c_str(), 
-    //                             "%s %f %f %f", 
-    //                             tmp,
-    //                             &pos.x,
-    //                             &pos.y,
-    //                             &pos.z);
-    //                         positions.push_back(pos);
-    //                     } break;
-
-    //                     case 'n': {
-    //                         glm::vec3 nrm;
-    //                         c8 tmp[2];
-    //                         sscanf(
-    //                             line.c_str(), 
-    //                             "%s %f %f %f", 
-    //                             tmp,
-    //                             &nrm.x,
-    //                             &nrm.y,
-    //                             &nrm.z);
-    //                         normals.push_back(nrm);
-    //                     } break;
-
-    //                     case 't': {
-    //                         glm::vec2 tex_coord;
-    //                         c8 tmp[2];
-    //                         sscanf(
-    //                             line.c_str(), 
-    //                             "%s %f %f", 
-    //                             tmp,
-    //                             &tex_coord.x,
-    //                             &tex_coord.y);
-    //                         tex_coords.push_back(tex_coord);
-    //                     } break;
-    //                 }
-    //             } break;
-
-    //             case 's': {
-
-    //             } break;
-
-    //             case 'f': { 
-    //                 MeshFaceData face;
-    //                 c8 tmp[2];
-
-    //                 if (normals.size() == 0 || tex_coords.size() == 0) {
-    //                     sscanf(
-    //                         line.c_str(), 
-    //                         "%s %d %d %d",
-    //                         tmp,
-    //                         &face.vertices[0].position_idx,
-    //                         &face.vertices[1].position_idx,
-    //                         &face.vertices[2].position_idx);
-    //                 } else {
-    //                     sscanf(
-    //                         line.c_str(), 
-    //                         "%s %d/%d/%d %d/%d/%d %d/%d/%d",
-    //                         tmp,
-    //                         &face.vertices[0].position_idx,
-    //                         &face.vertices[0].texcoord_idx,
-    //                         &face.vertices[0].normal_idx,
-    //                         &face.vertices[1].position_idx,
-    //                         &face.vertices[1].texcoord_idx,
-    //                         &face.vertices[1].normal_idx,
-    //                         &face.vertices[2].position_idx,
-    //                         &face.vertices[2].texcoord_idx,
-    //                         &face.vertices[2].normal_idx);
-    //                 }
-    //                 groups
-    //             } break;
-
-    //             case 'm': {
-
-    //             } break;
-
-    //             default:
-    //                 continue;
-    //         }
-    //     }
-
-    };
-
+    }
 }
