@@ -24,11 +24,12 @@ namespace Engine {
         }
         this->attachment_count = attachment_count;
 
-        VulkanCreate(width, height);
+        CreateVulkanFramebuffer(width, height);
     };
 
-    void VulkanFramebuffer::VulkanCreate(u32 width, u32 height) {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+    void VulkanFramebuffer::CreateVulkanFramebuffer(u32 width, u32 height) {
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
+
         VkFramebufferCreateInfo fb_create_info = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
         fb_create_info.renderPass = renderpass->handle;
         fb_create_info.attachmentCount = attachment_count;
@@ -42,19 +43,27 @@ namespace Engine {
             &fb_create_info,
             backend->GetVulkanAllocator(),
             &this->handle));
-    };
-
-    void VulkanFramebuffer::Regenerate(u32 width, u32 height) {
-        VulkanCreate(width, height);
     }
 
-    VulkanFramebuffer::~VulkanFramebuffer() {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+    void VulkanFramebuffer::DestroyVulkanFramebuffer() {
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
+
         vkDestroyFramebuffer(
             backend->GetVulkanDevice()->logical_device,
             this->handle,
             backend->GetVulkanAllocator());
+    };
 
+    void VulkanFramebuffer::Regenerate(u32 width, u32 height) {
+        DestroyVulkanFramebuffer();
+        CreateVulkanFramebuffer(width, height);
+    }
+
+    VulkanFramebuffer::~VulkanFramebuffer() {
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
+
+        DestroyVulkanFramebuffer();
+        
         if (this->attachments) {
             Platform::FMemory(this->attachments);
             this->attachments = nullptr;

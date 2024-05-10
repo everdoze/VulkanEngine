@@ -36,7 +36,7 @@ namespace Engine {
         i32 width;
         i32 height;
         i32 channel_count;
-        b8 has_transparency = false;
+
         u8* data = stbi_load(
             file_path.c_str(),
             &width, &height,

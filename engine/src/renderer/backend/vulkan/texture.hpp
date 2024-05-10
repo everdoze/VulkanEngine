@@ -12,11 +12,9 @@ namespace Engine {
             ~VulkanTexture();
 
             VulkanImage* GetImage() { return image; };
-            VkSampler& GetSampler() { return sampler; };
         
         protected:
             VulkanImage* image;
-            VkSampler sampler;
     };
 
 };

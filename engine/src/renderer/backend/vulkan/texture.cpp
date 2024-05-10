@@ -9,7 +9,7 @@ namespace Engine {
 
     VulkanTexture::VulkanTexture(TextureCreateInfo& info) : Texture(info) {
         
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
         VkFormat image_format = VK_FORMAT_R8G8B8A8_UNORM;
 
@@ -63,51 +63,12 @@ namespace Engine {
 
         command_buffer.EndSingleUse(queue);
 
-        VkSamplerCreateInfo sampler_create_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-        // TODO: make filters configurable
-        sampler_create_info.magFilter = VK_FILTER_LINEAR;
-        sampler_create_info.minFilter = VK_FILTER_LINEAR;
-        sampler_create_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        sampler_create_info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        sampler_create_info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        sampler_create_info.anisotropyEnable = VK_TRUE;
-        sampler_create_info.maxAnisotropy = 16;
-        sampler_create_info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        sampler_create_info.unnormalizedCoordinates = VK_FALSE;
-        sampler_create_info.compareEnable = VK_FALSE;
-        sampler_create_info.compareOp = VK_COMPARE_OP_ALWAYS;
-        sampler_create_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-        sampler_create_info.mipLodBias = 0.0f;
-        sampler_create_info.minLod = 0.0f;
-        sampler_create_info.maxLod = 0.0f;
-
-        VkResult result = vkCreateSampler(
-            backend->GetVulkanDevice()->logical_device,
-            &sampler_create_info,
-            backend->GetVulkanAllocator(),
-            &sampler
-        );
-        if (!IsVulkanResultSuccess(result)) {
-            ERROR("Error occured during creation of texture sampler: %s", VulkanResultString(result, true));
-            return;
-        }
-
         this->has_transparency = has_transparency;
         this->generation++;
     };
 
     VulkanTexture::~VulkanTexture() {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
-
         delete this->image;
-        
-        vkDestroySampler(
-            backend->GetVulkanDevice()->logical_device,
-            sampler,
-            backend->GetVulkanAllocator()
-        );
-
-        this->sampler = 0;
     };
 
 };

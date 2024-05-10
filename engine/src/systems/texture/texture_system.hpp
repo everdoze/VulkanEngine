@@ -31,6 +31,7 @@ namespace Engine {
             b8 CreateDefaultTextures();
             void DestroyDefaultTextures();
 
+            Texture* GetDefaultTexture() { return default_texture; };
             Texture* GetDefaultDiffuse() { return default_diffuse; };
             Texture* GetDefaultSpecular() { return default_specular; };
             Texture* GetDefaultNormal() { return default_normal; };
@@ -39,6 +40,7 @@ namespace Engine {
         
         private:
             static TextureSystem* instance;
+            Texture* default_texture;
             Texture* default_diffuse;
             Texture* default_specular;
             Texture* default_normal;

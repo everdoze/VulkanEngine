@@ -52,6 +52,7 @@ namespace Engine {
             virtual Material* CreateMaterial(MaterialCreateInfo& info) = 0;
             virtual Geometry* CreateGeometry(GeometryCreateInfo& info) = 0;
             virtual Shader* CreateShader(ShaderConfig& config) = 0;
+            virtual Sampler* CreateSampler(SamplerCreateInfo& info) = 0;
 
         protected:
             std::string name;
@@ -87,6 +88,8 @@ namespace Engine {
             Material* CreateMaterial(MaterialCreateInfo& info);
             Geometry* CreateGeometry(GeometryCreateInfo& info);
             Shader* CreateShader(ShaderConfig& config);
+            Sampler* CreateSampler(SamplerCreateInfo info);
+
         private:
             b8 BeginFrame(f32 delta_time);
             b8 EndFrame(f32 delta_time);

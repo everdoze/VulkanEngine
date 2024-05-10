@@ -98,7 +98,7 @@ namespace Engine {
     class Shader {
         public:
             Shader(ShaderConfig& config);
-            virtual ~Shader() {};
+            virtual ~Shader();
 
             virtual b8 SetUniform(ShaderUniformConfig* uniform, const void* value) = 0;
             b8 SetUniformByName(std::string name, const void* value);
@@ -112,7 +112,7 @@ namespace Engine {
             virtual void ApplyGlobals() = 0;
             virtual void ApplyInstance(b8 needs_update) = 0;
 
-            virtual u32 AcquireInstanceResources() = 0;
+            virtual u32 AcquireInstanceResources(std::vector<TextureMap*> texture_maps) = 0;
             virtual void ReleaseInstanceResources(u32 instance_id) = 0;
 
             b8 ready;
@@ -140,7 +140,7 @@ namespace Engine {
             u32 push_constant_count;
             MemoryRange push_constant_ranges[32];
 
-            std::vector<Texture*> global_textures;
+            std::vector<TextureMap> global_texture_maps;
             u8 instance_texture_count;
 
             ShaderScope bound_scope;

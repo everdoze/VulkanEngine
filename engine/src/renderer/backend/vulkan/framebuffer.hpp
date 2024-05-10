@@ -25,7 +25,8 @@ namespace Engine {
 
         private:
             class VulkanRenderpass* renderpass;
-            void VulkanCreate(u32 width, u32 height);
+            void CreateVulkanFramebuffer(u32 width, u32 height);
+            void DestroyVulkanFramebuffer();
     };
 
 };

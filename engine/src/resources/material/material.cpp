@@ -19,16 +19,20 @@ namespace Engine {
         Platform::ZMemory(&diffuse_map, sizeof(TextureMap));
         Platform::ZMemory(&specular_map, sizeof(TextureMap));
         Platform::ZMemory(&normals_map, sizeof(TextureMap));
+        texture_maps.resize(info.textures.size());
         for (u32 i = 0; i < info.textures.size(); ++i) {
             switch (info.textures[i].use) {
                 case TextureUse::MAP_DIFFUSE:
                     diffuse_map = info.textures[i];
+                    texture_maps[i] = &diffuse_map;
                     break;
                 case TextureUse::MAP_SPECULAR:
                     specular_map = info.textures[i];
+                    texture_maps[i] = &specular_map;
                     break;
                 case TextureUse::MAP_NORMAL:
                     normals_map = info.textures[i];
+                    texture_maps[i] = &normals_map;
                     break;
                 default:
                     ERROR("Material::Material - unknown texture use in material '%s'.", name.c_str());
@@ -45,11 +49,16 @@ namespace Engine {
 
     b8 Material::AcquireInstanceResources() {
         if (!shader) {
-            ERROR("Material::AcquireInstanceResources - unable to acquire resources. Shader does not exists.");
+            ERROR("Material::AcquireInstanceResources - unable to acquire resources.  Shader does not exists.");
             return false;
         }
 
-        internal_id = shader->AcquireInstanceResources();
+        internal_id = shader->AcquireInstanceResources(texture_maps);
+        if (internal_id == INVALID_ID) {
+            ERROR("Material::AcquireInstanceResources - unable to acquire resources.");
+            return false;
+        }
+
         return true;
     };
 
@@ -72,14 +81,14 @@ namespace Engine {
             shader->SetUniformByName("diffuse_color", &diffuse_color);
 
             if (diffuse_map.texture) {
-                shader->SetUniformByName("diffuse_texture", diffuse_map.texture);
+                shader->SetUniformByName("diffuse_texture", &diffuse_map);
             }
         
             if (specular_map.texture) {
-                shader->SetUniformByName("specular_texture", specular_map.texture);
+                shader->SetUniformByName("specular_texture", &specular_map);
             }
             if (normals_map.texture) {
-                shader->SetUniformByName("normal_texture", normals_map.texture);
+                shader->SetUniformByName("normal_texture", &normals_map);
             }
 
             if (shader->GetName() == BUILTIN_MATERIAL_SHADER_NAME) {

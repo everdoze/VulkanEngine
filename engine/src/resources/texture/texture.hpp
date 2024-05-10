@@ -3,24 +3,19 @@
 #include "defines.hpp"
 
 #include "core/utils/freelist.hpp"
+#include "sampler.hpp"
+#include "texture_types.hpp"
 
 namespace Engine {
 
-    enum class TextureUse {
-        UNKNOWN = 0x00,
-        MAP_DIFFUSE = 0x01,
-        MAP_SPECULAR = 0x02,
-        MAP_NORMAL = 0x04
-    };
-
     struct TextureCreateInfo {
-        public:
-            std::string name;
-            u32 width;
-            u32 height;
-            u8 channel_count;
-            u8 has_transparency;
-            u8* pixels;
+        std::string name;
+        u32 width;
+        u32 height;
+        u8 channel_count;
+        b8 has_transparency;
+        b8 is_writeable;
+        u8* pixels;
     };
 
     class Texture {
@@ -29,14 +24,23 @@ namespace Engine {
             virtual ~Texture();
 
             u32 GetId() { return id; };
+
             u32 GetWidth() { return width; };
+
             u32 GetHeight() { return height; };
+            
             std::string& GetName() { return name; };
 
             u8 GetChannelCount() { return channel_count; };
-            u32 HasTransparency() { return has_transparency; };
+
+            b8 HasTransparency() { return has_transparency; };
+
+            b8 IsWriteable() { return is_writeable; };
+
             u32 GetGeneration() { return generation; };
+
             void SetGeneration(u32 generation) { this->generation = generation; };
+
             void UpdateGeneration () { 
                 if (generation == INVALID_ID) {
                     generation = 0;
@@ -53,8 +57,21 @@ namespace Engine {
             u32 height;
             u8 channel_count;
             b8 has_transparency;
+            b8 is_writeable;
             u32 generation;
     };
 
+    struct TextureMap {
+        Texture* texture;
+        TextureUse use;
+        Sampler* sampler;
+
+        // TextureFilterMode filter_minify;
+        // TextureFilterMode filter_magnify;
+
+        // TextureRepeat repeat_u;
+        // TextureRepeat repeat_v;
+        // TextureRepeat repeat_w;
+    };
 
 };

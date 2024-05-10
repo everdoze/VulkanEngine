@@ -84,6 +84,7 @@ namespace Engine {
     };
 
     b8 TextureSystem::CreateDefaultTextures() {
+        // Default texture
         const u32 tex_dimension = 256;
         const u32 channels = 4;
         const u32 pixel_count = tex_dimension * tex_dimension;
@@ -91,24 +92,23 @@ namespace Engine {
 
         Platform::SMemory(pixels, 255, sizeof(u8) * pixel_count * channels);
 
-        // Each pixel.
-        // for (u64 row = 0; row < tex_dimension; ++row) {
-        //     for (u64 col = 0; col < tex_dimension; ++col) {
-        //         u64 index = (row * tex_dimension) + col;
-        //         u64 index_bpp = index * channels;
-        //         if (row % 2) {
-        //             if (col % 2) {
-        //                 pixels[index_bpp + 0] = 0;
-        //                 pixels[index_bpp + 1] = 0;
-        //             }
-        //         } else {
-        //             if (!(col % 2)) {
-        //                 pixels[index_bpp + 0] = 0;
-        //                 pixels[index_bpp + 1] = 0;
-        //             }
-        //         }
-        //     }
-        // }
+        for (u64 row = 0; row < tex_dimension; ++row) {
+            for (u64 col = 0; col < tex_dimension; ++col) {
+                u64 index = (row * tex_dimension) + col;
+                u64 index_bpp = index * channels;
+                if (row % 2) {
+                    if (col % 2) {
+                        pixels[index_bpp + 0] = 0;
+                        pixels[index_bpp + 1] = 0;
+                    }
+                } else {
+                    if (!(col % 2)) {
+                        pixels[index_bpp + 0] = 0;
+                        pixels[index_bpp + 1] = 0;
+                    }
+                }
+            }
+        }
 
         TextureCreateInfo create_info;
         create_info.name = DEFAULT_TEXTURE_NAME;
@@ -116,26 +116,45 @@ namespace Engine {
         create_info.height = tex_dimension;
         create_info.channel_count = channels;
         create_info.has_transparency = false;
+        create_info.is_writeable = false;
         create_info.pixels = pixels;
-        default_diffuse = RendererFrontend::GetInstance()->CreateTexture(create_info);
+        default_texture = RendererFrontend::GetInstance()->CreateTexture(create_info);
+        ///////////////////////////////////////////////////
 
-        u8 spec_pixels[16 * 16 * 4];
+        // Default diffuse texture is white
+        u8 diff_pixels[16 * 16 * 4];
+        Platform::SMemory(pixels, 255, sizeof(u8) * 16 * 16 * 4);
+
+        TextureCreateInfo diff_create_info;
+        diff_create_info.name = DEFAULT_TEXTURE_NAME;
+        diff_create_info.width = 16;
+        diff_create_info.height = 16;
+        diff_create_info.channel_count = channels;
+        diff_create_info.has_transparency = false;
+        diff_create_info.is_writeable = false;
+        diff_create_info.pixels = pixels;
+        default_diffuse = RendererFrontend::GetInstance()->CreateTexture(diff_create_info);
+        ////////////////////////////////////////
+
         // Default specular map is black
+        u8 spec_pixels[16 * 16 * 4];
         Platform::ZMemory(spec_pixels, sizeof(u8) * 16 * 16 * 4);
+
         TextureCreateInfo spec_create_info;
         spec_create_info.name = DEFAULT_SPECULAR_NAME;
         spec_create_info.width = 16;
         spec_create_info.height = 16;
         spec_create_info.channel_count = 4;
         spec_create_info.has_transparency = false;
+        spec_create_info.is_writeable = false;
         spec_create_info.pixels = spec_pixels;
         default_specular = RendererFrontend::GetInstance()->CreateTexture(spec_create_info);
+        //////////////////////////////////////////
 
-        // Normal texture.
+        // Default normal texture is blue
         u8 normal_pixels[16 * 16 * 4];  // w * h * channels
-        Platform::ZMemory(normal_pixels, sizeof(u8) * 16 * 16 * 4);
+        Platform::SMemory(normal_pixels, 255, sizeof(u8) * 16 * 16 * 4);
 
-        // Each pixel.
         for (u64 row = 0; row < 16; ++row) {
             for (u64 col = 0; col < 16; ++col) {
                 u64 index = (row * 16) + col;
@@ -143,8 +162,6 @@ namespace Engine {
                 // Set blue, z-axis by default and alpha.
                 normal_pixels[index_bpp + 0] = 128;
                 normal_pixels[index_bpp + 1] = 128;
-                normal_pixels[index_bpp + 2] = 255;
-                normal_pixels[index_bpp + 3] = 255;
             }
         }
 
@@ -154,13 +171,16 @@ namespace Engine {
         norm_create_info.height = 16;
         norm_create_info.channel_count = 4;
         norm_create_info.has_transparency = false;
+        norm_create_info.is_writeable = false;
         norm_create_info.pixels = normal_pixels;
         default_normal = RendererFrontend::GetInstance()->CreateTexture(norm_create_info);
+        ///////////////////////////////////////////
 
         return true;
     };
 
     void TextureSystem::DestroyDefaultTextures() {
+        delete default_texture;
         delete default_diffuse;
         delete default_specular;
         delete default_normal;
@@ -181,6 +201,7 @@ namespace Engine {
             create_info.channel_count = image->GetChannelCount();
             create_info.has_transparency = image->HasTransparency();
             create_info.pixels = image->GetPixels();
+            create_info.is_writeable = false;
             texture = RendererFrontend::GetInstance()->CreateTexture(create_info);
 
             texture->UpdateGeneration();

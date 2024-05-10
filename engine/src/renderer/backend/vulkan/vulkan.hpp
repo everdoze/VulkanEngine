@@ -23,6 +23,17 @@ namespace Engine {
 
     class VulkanRendererBackend : public RendererBackend {
         public:
+            static VulkanRendererBackend* CreateBackend(RendererSetup setup) {
+                instance = new VulkanRendererBackend(setup);
+                return instance;
+            };
+
+            static VulkanRendererBackend* GetInstance() { 
+                return instance;
+            };
+
+            static VulkanRendererBackend* instance;
+
             VulkanRendererBackend(RendererSetup setup);
             ~VulkanRendererBackend() {};
 
@@ -88,6 +99,8 @@ namespace Engine {
             Material* CreateMaterial(MaterialCreateInfo& info);
             Geometry* CreateGeometry(GeometryCreateInfo& info);
             Shader* CreateShader(ShaderConfig& config);
+            Sampler* CreateSampler(SamplerCreateInfo& info);
+
             void FreeGeometry(VulkanGeometry* geometry);
         private:
             // Adding debugger only for debug mode

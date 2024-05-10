@@ -16,7 +16,7 @@ namespace Engine {
     };
 
     VulkanDevice::~VulkanDevice() {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
         // Unset queues
         transfer_queue = nullptr;
         graphics_queue = nullptr;
@@ -60,16 +60,16 @@ namespace Engine {
     };
 
     VulkanDevice* VulkanDevice::CreateDevice(VulkanRendererBackend* backend) {
-        VulkanDevice* newDevice = new VulkanDevice();
+        VulkanDevice* new_device = new VulkanDevice();
         
-        if (!newDevice->SelectPhysicalDevice()) {
+        if (!new_device->SelectPhysicalDevice()) {
             return nullptr;
         }
 
         DEBUG("Creating logical device...");
 
-        b8 present_shares_graphics_queue = newDevice->graphics_queue_index == newDevice->present_queue_index;
-        b8 transfer_shares_graphics_queue = newDevice->graphics_queue_index == newDevice->transfer_queue_index;
+        b8 present_shares_graphics_queue = new_device->graphics_queue_index == new_device->present_queue_index;
+        b8 transfer_shares_graphics_queue = new_device->graphics_queue_index == new_device->transfer_queue_index;
         u32 index_count = 1;
 
         if (!present_shares_graphics_queue) {
@@ -82,12 +82,12 @@ namespace Engine {
         const u32 max_queue_count = 32;
         u32 indecies[max_queue_count];
         u8 index = 0;
-        indecies[index++] = newDevice->graphics_queue_index;
+        indecies[index++] = new_device->graphics_queue_index;
         if (!present_shares_graphics_queue) {
-            indecies[index++] = newDevice->present_queue_index;
+            indecies[index++] = new_device->present_queue_index;
         }
         if (!transfer_shares_graphics_queue) {
-            indecies[index++] = newDevice->transfer_queue_index;
+            indecies[index++] = new_device->transfer_queue_index;
         }
 
         VkDeviceQueueCreateInfo queues_create_infos[max_queue_count];
@@ -116,50 +116,46 @@ namespace Engine {
         device_create_info.ppEnabledExtensionNames = &extension_names;
 
         VK_CHECK(vkCreateDevice(
-            newDevice->physical_device, 
+            new_device->physical_device, 
             &device_create_info, 
             backend->GetVulkanAllocator(), 
-            &newDevice->logical_device));
+            &new_device->logical_device));
 
         DEBUG("Logical device created successfully.");
 
         vkGetDeviceQueue(
-            newDevice->logical_device,
-            newDevice->graphics_queue_index,
+            new_device->logical_device,
+            new_device->graphics_queue_index,
             0,
-            &newDevice->graphics_queue);
+            &new_device->graphics_queue);
 
         vkGetDeviceQueue(
-            newDevice->logical_device,
-            newDevice->present_queue_index,
+            new_device->logical_device,
+            new_device->present_queue_index,
             0,
-            &newDevice->present_queue);
+            &new_device->present_queue);
 
         vkGetDeviceQueue(
-            newDevice->logical_device,
-            newDevice->transfer_queue_index,
+            new_device->logical_device,
+            new_device->transfer_queue_index,
             0,
-            &newDevice->transfer_queue); 
+            &new_device->transfer_queue); 
 
         // Create command pool
         VkCommandPoolCreateInfo cp_create_info = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
-        cp_create_info.queueFamilyIndex = newDevice->graphics_queue_index;
+        cp_create_info.queueFamilyIndex = new_device->graphics_queue_index;
         cp_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         VK_CHECK(vkCreateCommandPool(
-            newDevice->logical_device, 
+            new_device->logical_device, 
             &cp_create_info, 
             backend->GetVulkanAllocator(), 
-            &newDevice->graphics_command_pool));
+            &new_device->graphics_command_pool));
 
-        return newDevice;
-    };
-
-    void VulkanDevice::DestroyDevice() {
-        
+        return new_device;
     };
 
     b8 VulkanDevice::SelectPhysicalDevice() {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
         u32 physical_device_count = 0;
         VK_CHECK(vkEnumeratePhysicalDevices(backend->GetVulkanInstance(), &physical_device_count, 0));

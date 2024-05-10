@@ -53,8 +53,9 @@ namespace Engine {
     struct VulkanShaderInsanceState {
         u32 id;
         u64 offset;
+        FreelistNode* allocated_block;
         VulkanShaderDescriptorSetState descriptor_set_state;
-        std::vector<VulkanTexture*> instance_textures;
+        std::vector<TextureMap*> instance_texture_maps;
     };
 
     enum class VulkanShaderDescriptorBindingFlags: u32 {
@@ -102,7 +103,7 @@ namespace Engine {
             void ApplyGlobals();
             void ApplyInstance(b8 needs_update);
 
-            u32 AcquireInstanceResources();
+            u32 AcquireInstanceResources(std::vector<TextureMap*> texture_maps);
             void ReleaseInstanceResources(u32 instance_id);
 
             b8 SetUniform(ShaderUniformConfig* uniform, const void* value);
