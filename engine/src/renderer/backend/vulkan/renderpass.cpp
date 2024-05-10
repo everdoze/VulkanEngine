@@ -23,7 +23,7 @@ namespace Engine {
         VulkanRenderPassClearFlag clear_flags,
         b8 has_prev_pass, b8 has_next_pass) {
         
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
         this->ready = false;
         this->name = name;
@@ -138,7 +138,8 @@ namespace Engine {
 
     VulkanRenderpass::~VulkanRenderpass() {
         if (this->handle) {
-            VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+            VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
+            
             vkDestroyRenderPass(
                 backend->GetVulkanDevice()->logical_device,
                 this->handle,

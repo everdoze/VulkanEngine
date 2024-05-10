@@ -23,7 +23,7 @@ namespace Engine {
         b8 is_wireframe,
         b8 depth_test_enabled) {
         
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
         this->renderpass = renderpass;
 
@@ -193,7 +193,7 @@ namespace Engine {
     };
 
     VulkanPipeline::~VulkanPipeline() {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
         
         if (this->handle) {
             vkDestroyPipeline(

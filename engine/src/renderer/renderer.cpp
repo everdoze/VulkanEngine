@@ -77,7 +77,7 @@ namespace Engine {
     b8 RendererFrontend::CreateBackend(RendererSetup setup, RendererBackendType type) {
         switch (type) {
             case RendererBackendType::VULKAN: {
-                backend = new VulkanRendererBackend(setup);
+                backend = VulkanRendererBackend::CreateBackend(setup);
             } break;
 
             case RendererBackendType::OPEN_GL: {
@@ -277,6 +277,13 @@ namespace Engine {
             return nullptr;
         }
         return backend->CreateShader(config);
+    };
+
+    Sampler* RendererFrontend::CreateSampler(SamplerCreateInfo info) {
+        if (!backend) {
+            return nullptr;
+        }
+        return backend->CreateSampler(info);
     };
 
     u32 RendererFrontend::GetFrameHeightS() {

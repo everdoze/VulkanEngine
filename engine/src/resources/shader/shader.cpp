@@ -4,6 +4,8 @@
 #include "core/logger/logger.hpp"
 #include "systems/texture/texture_system.hpp"
 #include "platform/platform.hpp"
+#include "renderer/renderer.hpp"
+#include "resources/texture/sampler.hpp"
 
 namespace Engine {
 
@@ -48,8 +50,20 @@ namespace Engine {
             if (is_sampler) {
                 uniform->offset = 0;
                 if (is_global) {
-                    uniform->location = global_textures.size();
-                    global_textures.push_back(TextureSystem::GetInstance()->GetDefaultDiffuse());
+                    uniform->location = global_texture_maps.size();
+                    global_texture_maps.push_back(
+                        (TextureMap){
+                            TextureSystem::GetInstance()->GetDefaultTexture(),
+                            TextureUse::UNKNOWN,
+                            RendererFrontend::GetInstance()->CreateSampler((SamplerCreateInfo){
+                                TextureFilterMode::LINEAR,
+                                TextureFilterMode::LINEAR,
+                                TextureRepeat::REPEAT,
+                                TextureRepeat::REPEAT,
+                                TextureRepeat::REPEAT
+                            })
+                        }
+                    );
                 } else {
                     uniform->location = instance_texture_count;
                     instance_texture_count++;
@@ -89,6 +103,16 @@ namespace Engine {
         }
 
         ubo.offset = global_ubo.size;
+    }
+
+    Shader::~Shader() {
+        if (global_texture_maps.size()) {
+            DEBUG("Destroying global samplers for shader '%s'.", name.c_str());
+            for (TextureMap& map : global_texture_maps) {
+                delete map.sampler;
+            }
+            global_texture_maps.clear();
+        }
     };
 
     ShaderUniformConfig* Shader::GetUniform(std::string name) {

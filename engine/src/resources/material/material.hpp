@@ -10,12 +10,6 @@ namespace Engine {
 
     #define DEFAULT_MATERIAL_NAME "default_material"
 
-    class TextureMap {
-        public:
-            Texture* texture;
-            TextureUse use;
-    };
-
     struct MaterialCreateInfo {
         std::string name;
         std::vector<TextureMap> textures;
@@ -62,6 +56,7 @@ namespace Engine {
             TextureMap diffuse_map;
             TextureMap specular_map;
             TextureMap normals_map;
+            std::vector<TextureMap*> texture_maps;
             FreelistNode* memory;
             u32 current_frame;
             f32 shininess;

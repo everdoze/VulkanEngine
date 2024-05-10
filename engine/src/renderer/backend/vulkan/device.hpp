@@ -36,7 +36,6 @@ namespace Engine {
             ~VulkanDevice();
 
             static VulkanDevice* CreateDevice(class VulkanRendererBackend* backend);
-            static void DestroyDevice();
 
             b8 SelectPhysicalDevice();
             b8 PhysicalDeviceMeetsRequirements(

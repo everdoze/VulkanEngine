@@ -10,7 +10,7 @@ namespace Engine {
         u32 width,
         u32 height) {
             
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
         ready = false;
         depth_attachment = nullptr;
@@ -165,7 +165,7 @@ namespace Engine {
     }
 
     VulkanSwapchain::~VulkanSwapchain() {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
         vkDeviceWaitIdle(backend->GetVulkanDevice()->logical_device);
 
@@ -205,7 +205,8 @@ namespace Engine {
     }
 
     VkResult VulkanSwapchain::AcquireNextImageIndex(u64 timeout_ns, VkSemaphore image_available_semaphore, VkFence fence, u32* out_index) {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
+
         return vkAcquireNextImageKHR(
             backend->GetVulkanDevice()->logical_device,
             this->handle,
@@ -216,7 +217,8 @@ namespace Engine {
     };
 
     void VulkanSwapchain::GenerateUIFramebuffers(VulkanRenderpass* renderpass) {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
+
         ui_framebuffers.reserve(image_count);
         for (u32 i = 0; i < this->image_count; ++i) {
             u32 attachment_count = 1;
@@ -237,7 +239,8 @@ namespace Engine {
     };
 
     void VulkanSwapchain::GenerateWorldFramebuffers(VulkanRenderpass* renderpass) {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
+        
         world_framebuffers.reserve(this->image_count);
         for (u32 i = 0; i < this->image_count; ++i) {
             u32 attachment_count = 2;

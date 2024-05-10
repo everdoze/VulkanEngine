@@ -15,8 +15,7 @@ namespace Engine
     };
 
     VulkanGeometry::~VulkanGeometry() {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
-        backend->FreeGeometry(this);
+        VulkanRendererBackend::GetInstance()->FreeGeometry(this);
         this->Free();
     };
 

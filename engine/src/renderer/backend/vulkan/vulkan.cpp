@@ -6,8 +6,11 @@
 #include "renderer/renderer_types.hpp"
 #include "texture.hpp"
 #include "material.hpp"
+#include "sampler.hpp"
 
 namespace Engine {
+
+    VulkanRendererBackend* VulkanRendererBackend::instance = nullptr;
 
     FreelistNode* VulkanRendererBackend::UploadDataRange(VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, u64 size, void* data) {
         // Create a host-visible staging buffer to upload to. Mark it as the source of the transfer.
@@ -849,7 +852,9 @@ namespace Engine {
         }
 
         return new VulkanShader(vk_config, config);
+    }
+
+    Sampler* VulkanRendererBackend::CreateSampler(SamplerCreateInfo& info) {
+        return new VulkanSampler(info);
     };
-
-
 };  

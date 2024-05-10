@@ -7,6 +7,7 @@
 #include "../vulkan.hpp"
 #include "systems/resource/resource_system.hpp"
 #include "systems/texture/texture_system.hpp"
+#include "../sampler.hpp"
 
 namespace Engine {
     
@@ -39,7 +40,7 @@ namespace Engine {
     VulkanShader::VulkanShader(VulkanShaderConfig& vk_config, ShaderConfig& config): Shader(config) {
         this->ready = false;
 
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
         if (!vk_config.renderpass) {
             ERROR("VulkanShader::VulkanShader - renderpass is not provided in VulkanShaderConfig.");
@@ -205,8 +206,14 @@ namespace Engine {
     };
 
     VulkanShader::~VulkanShader() {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
         VulkanDevice* device = backend->GetVulkanDevice();
+
+        for (u32 i = 0; i < instance_states.size(); ++i) {
+            for (u32 j = 0; j < instance_states[i].instance_texture_maps.size(); ++j) {
+                delete instance_states[i].instance_texture_maps[j]->sampler;
+            }
+        }
 
         // Descriptor set layouts.
         for (u32 i = 0; i < 3; ++i) {
@@ -295,7 +302,7 @@ namespace Engine {
         ShaderStageConfig& config,
         VulkanShaderStage* out_shader_stage) {
         
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
         Platform::ZMemory(&out_shader_stage->create_info, sizeof(VkShaderModuleCreateInfo));
 
@@ -338,7 +345,7 @@ namespace Engine {
     };
 
     void VulkanShader::Use() {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
         u32 image_index = backend->GetImageIndex();
         VulkanCommandBuffer* command_buffer = backend->GetGraphicsCommandBufers()[image_index];
         this->pipeline->Bind(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -369,7 +376,7 @@ namespace Engine {
     };
 
     void VulkanShader::ApplyGlobals() {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
         VulkanDevice* device = backend->GetVulkanDevice();
         u32 image_index = backend->GetImageIndex();
         VulkanCommandBuffer* command_buffer = backend->GetGraphicsCommandBufers()[image_index];
@@ -416,7 +423,7 @@ namespace Engine {
             return;
         }
 
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
         VulkanDevice* device = backend->GetVulkanDevice();
         u32 image_index = backend->GetImageIndex();
         VulkanCommandBuffer* command_buffer = backend->GetGraphicsCommandBufers()[image_index];
@@ -463,10 +470,12 @@ namespace Engine {
                 VkDescriptorImageInfo image_infos[VULKAN_SHADER_MAX_INSTANCE_TEXTURES];
                 for (u32 i = 0; i < total_sampler_count; ++i) {
                     // TODO: only update in the list if actually needing an update.
-                    VulkanTexture* t = instance_states[bound_instance_id].instance_textures[i];
+                    TextureMap* map = instance_states[bound_instance_id].instance_texture_maps[i];
+                    VulkanTexture* t = (VulkanTexture*)map->texture;
+                    VulkanSampler* sampler = static_cast<VulkanSampler*>(map->sampler);
                     image_infos[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                     image_infos[i].imageView = t->GetImage()->view;
-                    image_infos[i].sampler = t->GetSampler();
+                    image_infos[i].sampler = sampler->GetSampler();
 
                     // TODO: change up descriptor state to handle this properly.
                     // Sync frame generation if not using a default texture.
@@ -499,8 +508,8 @@ namespace Engine {
         vkCmdBindDescriptorSets(command_buffer->handle, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->pipeline_layout, 1, 1, &object_descriptor_set, 0, 0);
     };
 
-    u32 VulkanShader::AcquireInstanceResources() {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+    u32 VulkanShader::AcquireInstanceResources(std::vector<TextureMap*> texture_maps) {
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
         VulkanDevice* device = backend->GetVulkanDevice();
 
         u32 instance_id = INVALID_ID;
@@ -522,22 +531,19 @@ namespace Engine {
         }
 
         u32 texture_count = descriptor_sets[(u32)ShaderScope::INSTANCE].bindings[(u32)VulkanShaderDescriptorBindingIndex::SAMPLER].descriptorCount;
-        VulkanTexture* default_diffuse = static_cast<VulkanTexture*>(TextureSystem::GetInstance()->GetDefaultDiffuse());
-        VulkanTexture* default_spec = static_cast<VulkanTexture*>(TextureSystem::GetInstance()->GetDefaultSpecular());
-        VulkanTexture* default_nrm = static_cast<VulkanTexture*>(TextureSystem::GetInstance()->GetDefaultNormal());
-        instance_state->instance_textures.resize(texture_count);
-        instance_state->instance_textures[0] = default_diffuse;
-        if (texture_count > 1) {
-            instance_state->instance_textures[1] = default_spec;
+        instance_state->instance_texture_maps.resize(texture_count);
+
+        for (u32 i = 0; i < texture_count; ++i) {
+            instance_state->instance_texture_maps[i] = texture_maps[i];
         }
-        if (texture_count > 2) {
-            instance_state->instance_textures[2] = default_nrm;
-        }
+        
         FreelistNode* node = uniform_buffer->Allocate(ubo_stride);
         if (!node) {
             ERROR("VulkanShader::AcquireInstanceResources - failed, can't allocate instance UBO in shader '%s", name.c_str());
             return INVALID_ID;
         }
+
+        instance_state->allocated_block = node;
 
         VulkanShaderDescriptorSetState* set_state = &instance_state->descriptor_set_state;
         u32 binding_count = descriptor_sets[(u32)ShaderScope::INSTANCE].bindings.size();
@@ -570,7 +576,7 @@ namespace Engine {
     };
 
     void VulkanShader::ReleaseInstanceResources(u32 instance_id) {
-        VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
         VulkanDevice* device = backend->GetVulkanDevice();
 
         VulkanShaderInsanceState* state = &instance_states[instance_id];
@@ -589,11 +595,12 @@ namespace Engine {
 
         Platform::ZMemory(state->descriptor_set_state.descriptor_states, sizeof(VulkanShaderDescriptorSetState) * VULKAN_SHADER_MAX_BINDINGS);
 
-        if (state->instance_textures.size()) {
-            state->instance_textures.clear();
+        if (state->instance_texture_maps.size()) {
+            state->instance_texture_maps.clear();
         }
 
-        uniform_buffer->Free(state->offset);
+        //uniform_buffer->Free(state->offset);
+        state->allocated_block->FreeBlock();
         state->offset = INVALID_ID;
         state->id = INVALID_ID;
     };
@@ -601,15 +608,15 @@ namespace Engine {
     b8 VulkanShader::SetUniform(ShaderUniformConfig* uniform, const void* value) {
         if (uniform->type == ShaderUniformType::SAMPLER) {
             if (uniform->scope == ShaderScope::GLOBAL) {
-                global_textures[uniform->location] = (VulkanTexture*)value;
+                global_texture_maps[uniform->location] = *(TextureMap*)value;
                 return true;
             } 
-            instance_states[bound_instance_id].instance_textures[uniform->location] = (VulkanTexture*)value;
+            instance_states[bound_instance_id].instance_texture_maps[uniform->location] = (TextureMap*)value;
             return true;
         } 
 
         if (uniform->scope == ShaderScope::LOCAL) {
-            VulkanRendererBackend* backend = static_cast<VulkanRendererBackend*>(RendererFrontend::GetBackend());
+            VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
             VulkanDevice* device = backend->GetVulkanDevice();
             u32 image_index = backend->GetImageIndex();
             VulkanCommandBuffer* command_buffer = backend->GetGraphicsCommandBufers()[image_index];
