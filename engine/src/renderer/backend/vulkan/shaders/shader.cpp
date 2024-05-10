@@ -536,40 +536,6 @@ namespace Engine {
         for (u32 i = 0; i < texture_count; ++i) {
             instance_state->instance_texture_maps[i] = texture_maps[i];
         }
-
-        // // HACK: Need to create default samplers here because it will cause an error if texture missing
-        // // TODO: CREATE DEFAULT SAMPLERS!!!!!
-        // for (u32 i = 0; i < texture_count; ++i) {
-        //     VulkanTexture* texture = nullptr;
-        //     TextureUse use;
-
-        //     switch (i) {
-        //         case 0:
-        //             texture = static_cast<VulkanTexture*>(TextureSystem::GetInstance()->GetDefaultDiffuse());
-        //             use = TextureUse::MAP_DIFFUSE;
-        //             break;
-                
-        //         case 1:
-        //             texture = static_cast<VulkanTexture*>(TextureSystem::GetInstance()->GetDefaultSpecular());
-        //             use = TextureUse::MAP_SPECULAR;
-        //             break;
-
-        //         case 2:
-        //             texture = static_cast<VulkanTexture*>(TextureSystem::GetInstance()->GetDefaultNormal());
-        //             use = TextureUse::MAP_NORMAL;
-        //             break;
-        //     }
-
-        //     instance_state->instance_texture_maps[i]
-        // }
-
-        // instance_state->instance_texture_maps[0].texture = default_diffuse;
-        // if (texture_count > 1) {
-        //     instance_state->instance_texture_maps[1].texture = default_spec;
-        // }
-        // if (texture_count > 2) {
-        //     instance_state->instance_texture_maps[2].texture = default_nrm;
-        // }
         
         FreelistNode* node = uniform_buffer->Allocate(ubo_stride);
         if (!node) {
