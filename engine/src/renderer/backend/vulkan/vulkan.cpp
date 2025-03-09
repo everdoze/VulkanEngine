@@ -65,14 +65,14 @@ namespace Engine {
         current_frame = INVALID_ID;
     };
 
-    b8 VulkanRendererBackend::Initialize() {
+    b8 VulkanRendererBackend::Initialize(RendererInitializationSetup& setup) {
         recreating_swapchain = false;
         image_index = 0;
         framebuffer_generation = 0;
         framebuffer_last_generation = 0;
 
         VkApplicationInfo app_info = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
-        app_info.apiVersion = VK_API_VERSION_1_3;
+        app_info.apiVersion = VK_API_VERSION_1_4;
         app_info.pApplicationName = name.c_str();
         app_info.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
         app_info.pEngineName = "Engine";
@@ -98,13 +98,14 @@ namespace Engine {
 
         char** validation_layers = nullptr;
         u32 validation_layers_count = 0;
+
         #if defined(_DEBUG)
             DEBUG("Validation layers enabled due to debug mode. Enumerating...");
 
             // List of validation layers required VULKAN VALIDATION_LAYERS
             std::vector<char*> validation_layers_v;
             validation_layers_v.push_back((char*)"VK_LAYER_KHRONOS_validation");
-            // validation_layers_v.push_back((char*)"VK_LAYER_LUNARG_api_dump");
+            //validation_layers_v.push_back((char*)"VK_LAYER_LUNARG_api_dump");
             validation_layers_count = validation_layers_v.size();
 
             // Obtain a list of available validation layers
@@ -190,13 +191,10 @@ namespace Engine {
         }
 
         // Renderpasses
-        if (!RenderpassesCreate()) {
+        if (!RenderpassesCreate(setup.renderpasses)) {
             ERROR("Failed to create Vulkan renderpasses!");
             return false;
         }
-
-        // Swapchain framebuffers
-        GenerateFramebuffers();
 
         // Command buffers
         DEBUG("Creating command buffers...");
@@ -218,6 +216,9 @@ namespace Engine {
     };
 
     void VulkanRendererBackend::Shutdown() {
+        if (!device) {
+            return;
+        }
         vkDeviceWaitIdle(device->logical_device);
 
         // Destroy buffers
@@ -237,8 +238,10 @@ namespace Engine {
 
         // Destroy renderpasses
         DEBUG("Destroying Vulkan renderpasses...");
-        delete ui_renderpass;
-        delete world_renderpass;
+        for (u32 i = 0; i < renderpass_queue.size(); ++i) {
+            DEBUG("|_Destroying '%s' renderpass.", renderpass_queue[i]->GetName().c_str());
+            delete renderpass_queue[i];
+        }
 
         // Destroy swapchain
         DEBUG("Destroying Vulkan swapchain...");
@@ -285,12 +288,12 @@ namespace Engine {
             }
 
             // Update render area
-            world_renderpass->OnResize(
-                glm::vec4(0, 0, this->width, this->height)
-            );
-            ui_renderpass->OnResize(
-                glm::vec4(0, 0, this->width, this->height)
-            );
+            // world_renderpass->OnResize(
+            //     glm::vec4(0, 0, this->width, this->height)
+            // );
+            // ui_renderpass->OnResize(
+            //     glm::vec4(0, 0, this->width, this->height)
+            // );
 
             DEBUG("Resized, booting.");
             return false;
@@ -335,57 +338,9 @@ namespace Engine {
         vkCmdSetViewport(command_buffer->handle, 0, 1, &viewport);
         vkCmdSetScissor(command_buffer->handle, 0, 1, &scissor);
 
-        world_renderpass->render_area.z = width;
-        world_renderpass->render_area.w = height;
+        // world_renderpass->render_area.z = width;
+        // world_renderpass->render_area.w = height;
 
-        return true;
-    };
-
-    b8 VulkanRendererBackend::BeginRenderpass(u8 renderpass_id) {
-        VulkanRenderpass* renderpass = nullptr;
-        VulkanFramebuffer* framebuffer = nullptr;
-        VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
-        
-        switch (renderpass_id) {
-            case (u8)BuiltinRenderpasses::WORLD: {
-                renderpass = world_renderpass;
-                framebuffer = swapchain->world_framebuffers[image_index];
-            } break;
-
-            case (u8)BuiltinRenderpasses::UI: {
-                renderpass = ui_renderpass;
-                framebuffer = swapchain->ui_framebuffers[image_index];
-            } break;
-
-            default: {
-                ERROR("VulkanRendererBackend::BeginRenderpasses called with unknown renderpass id: %#02x", renderpass_id);
-                return false;
-            };
-        }
-
-        renderpass->Begin(command_buffer, framebuffer);
-
-        return true;
-    };
-
-    b8 VulkanRendererBackend::EndRenderpass(u8 renderpass_id) {
-        VulkanRenderpass* renderpass = nullptr;
-        VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
-        switch (renderpass_id) {
-            case (u8)BuiltinRenderpasses::WORLD: {
-                renderpass = world_renderpass;
-            } break;
-
-            case (u8)BuiltinRenderpasses::UI: {
-                renderpass = ui_renderpass;
-            } break;
-
-            default: {
-                ERROR("VulkanRendererBackend::EndRenderpass called with unknown renderpass id: %#02x", renderpass_id);
-                return false;
-            };
-        }
-        renderpass->End(command_buffer);
         return true;
     };
 
@@ -476,10 +431,11 @@ namespace Engine {
     };
 
     b8 VulkanRendererBackend::SwapchainRecreate(u16 width, u16 height) {
+        if (!swapchain) {
+            ERROR("VulkanRendererBackend::SwapchainRecreate called when swapchain does not exists.");
+        }
         if (swapchain) {
             delete swapchain;
-        } else {
-            ERROR("VulkanRendererBackend::SwapchainRecreate called when swapchain does not exists.");
         }
         return SwapchainCreate(width, height);
     };
@@ -511,15 +467,12 @@ namespace Engine {
         width = cached_width;
         height = cached_height;
 
-        world_renderpass->render_area.z = width;
-        world_renderpass->render_area.w = height;
-
         cached_width = 0; 
         cached_height = 0;
         
         framebuffer_last_generation = framebuffer_generation;
 
-        GenerateFramebuffers();
+        EventSystem::GetInstance()->FireEvent(EventType::RenderTargetsRefresh, {});
 
         CreateCommandBuffers();
 
@@ -528,38 +481,30 @@ namespace Engine {
         return true;
     };
 
-    void VulkanRendererBackend::RegenerateFramebuffers() {
-        swapchain->RegenerateFramebuffers(width, height);
-    };
+    b8 VulkanRendererBackend::RenderpassesCreate(std::vector<RenderpassCreateInfo> renderpasses_config) {
+        for (u32 i = 0; i < renderpasses_config.size(); ++i) {
+            RenderpassCreateInfo& config = renderpasses_config[i];
+            VulkanRenderpass* pass = new VulkanRenderpass(
+                config.name,
+                config.render_area,
+                config.clear_color,
+                1.0f, 0, 
+                (RenderpassClearFlag)config.clear_flags,
+                !!config.prev_name.size(),
+                !!config.next_name.size()
+            );
 
-    void VulkanRendererBackend::GenerateFramebuffers() {
-        swapchain->GenerateUIFramebuffers(ui_renderpass);
-        swapchain->GenerateWorldFramebuffers(world_renderpass);
-    };
+            if (!pass || !pass->ready) {
+                delete pass;
+                ERROR("Error occured during creation of renderpass '%s'.", config.name.c_str());
+                continue;
+            }
 
-    b8 VulkanRendererBackend::RenderpassesCreate() {
-        // World Renderpass
-        world_renderpass = new VulkanRenderpass(
-            "WorldRenderpass",
-            glm::vec4(0, 0, this->width, this->height),
-            glm::vec4(0.0f, 0.1f, 0.1f, 1.0f),
-            1.0f, 0, // Depth, Stencil
-            VulkanRenderPassClearFlag::CLEAR_COLOR_BUFFER | 
-            VulkanRenderPassClearFlag::CLEAR_COLOR_DEPTH_BUFER | 
-            VulkanRenderPassClearFlag::CLEAR_COLOR_STENCIL_BUFFER,
-            false, true); // HasPrevPass, HasNextPass 
-        // std:string buffer = WORLD_RENDERPASS_NAME;
-        // renderpasses[buffer] = 
-        // UI Renderpass
-        ui_renderpass = new VulkanRenderpass(
-            "UIRenderpass",
-            glm::vec4(0, 0, this->width, this->height),
-            glm::vec4(0.0f, 0.0f, 0.0f, 0.0f),
-            1.0f, 0, // Depth, Stencil
-            VulkanRenderPassClearFlag::CLEAR_NONE,
-            true, false); // HasPrevPass, HasNextPass 
-    
-        return world_renderpass->ready && ui_renderpass->ready;
+            renderpasses[config.name] = pass;
+            renderpass_queue.emplace_back(pass);
+        }
+
+        return true;
     };
 
     void VulkanRendererBackend::CreateSyncObjects() {
@@ -699,7 +644,7 @@ namespace Engine {
         VulkanGeometry* geometry = static_cast<VulkanGeometry*>(data.geometry);
         VulkanCommandBuffer* command_buffer = graphics_command_buffers[image_index];
 
-        Material* material = data.geometry->GetMaterial();
+        // Material* material = data.geometry->GetMaterial();
 
         // switch (material->GetType())
         // {
@@ -731,10 +676,6 @@ namespace Engine {
     };
 
     Texture* VulkanRendererBackend::CreateTexture(TextureCreateInfo& info) {
-        return CreateTextureInternal(info);
-    };
-
-    VulkanTexture* VulkanRendererBackend::CreateTextureInternal(TextureCreateInfo& info) {
         return new VulkanTexture(info);
     };
 
@@ -761,8 +702,6 @@ namespace Engine {
         create_info.index_count = info.index_count;
         create_info.index_size = info.index_element_size * info.index_count;
         
-
-
         create_info.vertex_memory = UploadDataRange(
             device->graphics_command_pool, 
             0, device->graphics_queue, 
@@ -797,11 +736,13 @@ namespace Engine {
         VulkanShaderConfig vk_config = {};
         
         vk_config.max_descriptor_set_count = 1024;
-        if (config.renderpass_name == "Renderpass.Builtin.World") {
-            vk_config.renderpass = world_renderpass;
-        } else if (config.renderpass_name == "Renderpass.Builtin.UI") {
-            vk_config.renderpass = ui_renderpass;
-        }
+        // if (config.renderpass_name == "Renderpass.Builtin.World") {
+        //     vk_config.renderpass = world_renderpass;
+        // } else if (config.renderpass_name == "Renderpass.Builtin.UI") {
+        //     vk_config.renderpass = ui_renderpass;
+        // }
+
+        vk_config.renderpass = renderpasses[config.renderpass_name];
         
         
         // HACK: не хорошо хардкоженые использовать
@@ -835,26 +776,50 @@ namespace Engine {
         }
 
         for (u32 i =  0; i < config.uniforms.size(); ++i) {
-            if (config.uniforms[i].type == ShaderUniformType::SAMPLER) {
-                VulkanShaderDescrptorSetConfig* descriptor_config = &vk_config.descriptor_sets[(u32)config.uniforms[i].scope];
-                if (*descriptor_config != 0 && !(descriptor_config->flags & VulkanShaderDescriptorBindingFlags::SAMPLER)) {
-                    VkDescriptorSetLayoutBinding sampler_binding = {};
-                    sampler_binding.binding = (u32)VulkanShaderDescriptorBindingIndex::SAMPLER;
-                    sampler_binding.descriptorCount = 1;
-                    sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                    sampler_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-                    descriptor_config->bindings.push_back(sampler_binding);
-                    descriptor_config->flags |= VulkanShaderDescriptorBindingFlags::SAMPLER;
-                } else {
-                    descriptor_config->bindings[(u32)VulkanShaderDescriptorBindingIndex::SAMPLER].descriptorCount++;
-                }
+            if (config.uniforms[i].type != ShaderUniformType::SAMPLER) {
+                continue;
+            }
+
+            VulkanShaderDescrptorSetConfig* descriptor_config = &vk_config.descriptor_sets[(u32)config.uniforms[i].scope];
+            if (*descriptor_config != 0 && !(descriptor_config->flags & VulkanShaderDescriptorBindingFlags::SAMPLER)) {
+                VkDescriptorSetLayoutBinding sampler_binding = {};
+                sampler_binding.binding = (u32)VulkanShaderDescriptorBindingIndex::SAMPLER;
+                sampler_binding.descriptorCount = 1;
+                sampler_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                sampler_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+                descriptor_config->bindings.push_back(sampler_binding);
+                descriptor_config->flags |= VulkanShaderDescriptorBindingFlags::SAMPLER;
+            } else {
+                descriptor_config->bindings[(u32)VulkanShaderDescriptorBindingIndex::SAMPLER].descriptorCount++;
             }
         }
 
         return new VulkanShader(vk_config, config);
     }
 
-    Sampler* VulkanRendererBackend::CreateSampler(SamplerCreateInfo& info) {
+    Sampler* VulkanRendererBackend::CreateSampler(SamplerCreateInfo info) {
         return new VulkanSampler(info);
+    };
+
+    RenderTarget* VulkanRendererBackend::CreateRenderTarget(RenderTargetCreateInfo& info) {
+        return new VulkanRenderTarget(info);
+    };
+
+    Renderpass* VulkanRendererBackend::CreateRenderpass(RenderpassCreateInfo& info) {
+        return new VulkanRenderpass(
+            info.name, info.render_area,
+            info.clear_color, 1.0f, 0,
+            (RenderpassClearFlag)info.clear_flags, 
+            !!info.prev_name.size(),
+            !!info.next_name.size()
+        );
+    };
+
+    Texture* VulkanRendererBackend::GetWindowAttachment(u32 index) {
+        return swapchain->render_textures[index];
+    };
+
+    Texture* VulkanRendererBackend::GetDepthAttachment() {
+         return swapchain->depth_texture;
     };
 };  

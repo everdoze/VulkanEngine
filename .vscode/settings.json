@@ -125,7 +125,8 @@
         "optional": "cpp",
         "ratio": "cpp",
         "stop_token": "cpp",
-        "thread": "cpp"
+        "thread": "cpp",
+        "expected": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

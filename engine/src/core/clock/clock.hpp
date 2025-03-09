@@ -4,7 +4,7 @@
 
 namespace Engine {
 
-    class Clock {
+    class ENGINE_API Clock {
         public:
             void Update();
             void Start();

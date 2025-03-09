@@ -13,40 +13,45 @@ namespace Engine {
             instance = new ShaderSystem();
             return true;
         }
-        ERROR("ShaderSystem already initialized!");
+        ERROR("ShaderSystem is already initialized.");
         return false;
     };
 
     ShaderSystem::ShaderSystem() {};
 
     ShaderSystem::~ShaderSystem() {
-        for (auto [key, shader] : registered_shaders) {
-            delete shader;
+        for (auto [key, map] : registered_shaders) {
+            delete map.shader;
+            map.ref_count = 0;
+            map.auto_release = false;
         }
         registered_shaders.clear();
     };
 
     void ShaderSystem::Shutdown() {
         if (instance) {
-            delete instance;
-            return;
+            DEBUG("Shutting down ShaderSystem.");
+            return delete instance;
         }
         ERROR("ShaderSystem not initialized!");
     };
 
     Shader* ShaderSystem::GetShader(std::string name) {
-        if (!registered_shaders[name]) {
+        if (!registered_shaders.count(name)) {
             ERROR("ShaderSystem::GetShader - Shader not found with name '%s'. Use ShaderSystem::CreateShader to create a shader.", name.c_str());
             return nullptr;
         }
-        return registered_shaders[name];
+
+        registered_shaders[name].ref_count++;
+
+        return registered_shaders[name].shader;
     };
 
-    Shader* ShaderSystem::CreateShader(std::string name) {
+    Shader* ShaderSystem::CreateShader(std::string name, b8 auto_release) {
         ShaderResource* shader_resource = static_cast<ShaderResource*>(ResourceSystem::GetInstance()->LoadResource(ResourceType::SHADER, name));
         if (shader_resource) {
             ShaderConfig config = shader_resource->GetShaderConfig();
-            return CreateShader(config);
+            return CreateShader(config, auto_release);
         }
         ERROR("ShaderSystem::CreateShader - failed to load shader '%s'", name.c_str());
         return nullptr;
@@ -68,7 +73,7 @@ namespace Engine {
         return false;
     };
 
-    Shader* ShaderSystem::CreateShader(ShaderConfig& config) {
+    Shader* ShaderSystem::CreateShader(ShaderConfig& config, b8 auto_release) {
         if (!config.name.size()) {
             ERROR("ShaderSystem::CreateShader - can't create shader with a blank name");
             return nullptr;
@@ -80,7 +85,9 @@ namespace Engine {
 
         Shader* shader = RendererFrontend::GetInstance()->CreateShader(config);
         if (shader && shader->ready) {
-            registered_shaders[shader->GetName()] = shader;
+            registered_shaders[shader->GetName()].shader = shader;
+            registered_shaders[shader->GetName()].ref_count = 1;
+            registered_shaders[shader->GetName()].auto_release = auto_release;
             return shader;
         } 
         delete shader;
@@ -98,21 +105,31 @@ namespace Engine {
     };
 
     b8 ShaderSystem::UseShader(std::string name) {
-        if (!registered_shaders[name]) {
+        if (!registered_shaders.count(name)) {
             ERROR("ShaderSystem::UseShader - Shader not found with name '%s'. Use ShaderSystem::CreateShader to create a shader.");
             return false;
         }
-        registered_shaders[name]->Use();
-        current_shader = registered_shaders[name];
+
+        current_shader = registered_shaders[name].shader;
+        current_shader->Use();
+        
         return true;
     };
 
     b8 ShaderSystem::DestroyShader(std::string name) {
-        if (!registered_shaders[name]) {
+        if (!registered_shaders.count(name)) {
             ERROR("ShaderSystem::DestroyShader - Shader not found with name '%s'. Use ShaderSystem::CreateShader to create a shader.");
             return false;
         }
-        delete registered_shaders[name];
+
+        ShaderReference* shader_ref = &registered_shaders[name];
+
+        shader_ref->ref_count--;
+
+        if (shader_ref->auto_release && shader_ref->ref_count == 0) {
+            delete shader_ref->shader;
+        }
+        
         return true;
     };
 

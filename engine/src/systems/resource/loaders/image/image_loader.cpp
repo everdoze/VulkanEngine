@@ -47,8 +47,8 @@ namespace Engine {
 
         image = new ImageResource(id, name, file_path, data, required_channel_count, width, height);
 
-        if (stbi_failure_reason()) {
-            WARN("ImageLoader::Load failed to load file '%s' : %s", file_path.c_str(), stbi_failure_reason());
+        if (stbi_failure_reason() && !data) {
+            ERROR("ImageLoader::Load failed to load file '%s' : %s", file_path.c_str(), stbi_failure_reason());
             stbi__err(0, 0);
         }
 

@@ -4,6 +4,8 @@
 #include "defines.hpp"
 #include "image.hpp"
 #include "framebuffer.hpp"
+#include "texture.hpp"
+#include "render_target.hpp"
 
 namespace Engine {
 
@@ -13,13 +15,9 @@ namespace Engine {
             u8 max_frames_in_flight;
             VkSwapchainKHR handle;
             u32 image_count;
-            VkImage* images;
-            VkImageView* views;
+            std::vector<VulkanTexture*> render_textures;
 
-            VulkanImage* depth_attachment;
-
-            std::vector<VulkanFramebuffer*> ui_framebuffers;
-            std::vector<VulkanFramebuffer*> world_framebuffers;
+            VulkanTexture* depth_texture;
 
             b8 ready;
 
@@ -35,18 +33,6 @@ namespace Engine {
                 VkSemaphore render_complete_semaphore,
                 u32 present_image_index
             );
-
-            void GenerateUIFramebuffers(
-                class VulkanRenderpass* renderpass
-            );
-
-            void GenerateWorldFramebuffers(
-                class VulkanRenderpass* renderpass
-            );
-
-            void RegenerateFramebuffers(u32 width, u32 height);
-
-            void DestroyFramebuffers();
 
             VkResult AcquireNextImageIndex(u64 timeout_ns, VkSemaphore image_available_semaphore, VkFence fence, u32* out_index);
     };

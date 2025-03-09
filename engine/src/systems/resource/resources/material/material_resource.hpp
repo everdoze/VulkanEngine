@@ -6,7 +6,7 @@
 
 namespace Engine {
 
-    struct MaterialConfig {
+    struct ENGINE_API MaterialConfig {
         std::string name;
         std::string shader_name;
         b8 auto_release;
@@ -17,7 +17,7 @@ namespace Engine {
         f32 shininess;
     };
 
-    class MaterialResource : public Resource {
+    class ENGINE_API MaterialResource : public Resource {
         public:
             MaterialResource(
                 u32 loader_id, std::string name,

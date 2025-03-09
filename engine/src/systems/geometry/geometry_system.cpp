@@ -16,8 +16,10 @@ namespace Engine {
     GeometrySystem::~GeometrySystem() {
         DestroyDefaultGeometries();
 
-        for (Geometry* geometry : registered_geometries) { 
-            delete geometry;
+        for (GeometryReference& geometry_ref : registered_geometries) { 
+            delete geometry_ref.geometry;
+            geometry_ref.ref_count = 0;
+            geometry_ref.auto_release = false;
         }
 
         registered_geometries.clear();
@@ -28,31 +30,46 @@ namespace Engine {
             instance = new GeometrySystem();
             return true;
         }
-        WARN("Geometry system already initialized.");
+        WARN("GeometrySystem is already initialized.");
         return true;
     };
 
     void GeometrySystem::Shutdown() {
         if (instance) {
-            DEBUG("Shutting down GeometrySystem");
-            delete instance;
+            DEBUG("Shutting down GeometrySystem.");
+            return delete instance;
         }
+        ERROR("GeometrySystem is not initialized.");
     };
 
     Geometry* GeometrySystem::AcquireGeometryById(u32 id) {
-        return registered_geometries[id];
+        if (registered_geometries.size() < id) {
+            ERROR("GeometrySystem::AcquireGeometryById: Invalid out of bounds ID. Array size: '%u', ID: '%u'.", registered_geometries.size(), id);
+            return nullptr;
+        }
+
+        return registered_geometries[id].geometry;
     };
 
     void GeometrySystem::ReleaseGeometry(u32 id) {
-        Geometry* g = registered_geometries[id];
-        if (!g) {
+        if (registered_geometries.size() < id) {
+            ERROR("GeometrySystem::ReleaseGeometry: Invalid out of bounds ID. Array size: '%u', ID: '%u'.", registered_geometries.size(), id);
             return;
         }
-        delete g;
-    };
 
-    Geometry* GeometrySystem::LoadGeometry(GeometryConfig& config) {
-        return nullptr;
+        GeometryReference* geometry_ref = &registered_geometries[id];
+
+        if (!geometry_ref->geometry) {
+            WARN("GeometrySystem::ReleaseGeometry: Geometry with this ID does not exist.");
+            return;
+        }
+
+        geometry_ref->ref_count--;
+
+        if (geometry_ref->auto_release && geometry_ref->ref_count == 0) {
+            delete geometry_ref->geometry;
+        }
+
     };
 
     void GeometrySystem::CreateDefaultGeometries() {
@@ -97,45 +114,6 @@ namespace Engine {
             ERROR("Error occured during creating default 3d geometry.");
         }
 
-        // std::vector<Vertex2D> ui_verts(4);
-    
-        // ui_verts[0].position.x = -0.5 * f;  // 0    3
-        // ui_verts[0].position.y = -0.5 * f;  //
-        // ui_verts[0].texcoord.x = 0.0f;      //
-        // ui_verts[0].texcoord.y = 0.0f;      // 2    1
-
-        // ui_verts[1].position.y = 0.5 * f;
-        // ui_verts[1].position.x = 0.5 * f;
-        // ui_verts[1].texcoord.x = 1.0f;
-        // ui_verts[1].texcoord.y = 1.0f;
-
-        // ui_verts[2].position.x = -0.5 * f;
-        // ui_verts[2].position.y = 0.5 * f;
-        // ui_verts[2].texcoord.x = 0.0f;
-        // ui_verts[2].texcoord.y = 1.0f;
-
-        // ui_verts[3].position.x = 0.5 * f;
-        // ui_verts[3].position.y = -0.5 * f;
-        // ui_verts[3].texcoord.x = 1.0f;
-        // ui_verts[3].texcoord.y = 0.0f;
-
-        // const u32 ui_index_count = 6;
-        // std::vector<u32> ui_indices = {2, 1, 0, 3, 0, 1};
-
-        // GeometryCreateInfo ui_create_info;
-        // ui_create_info.id = 0;
-        // ui_create_info.vertices = ui_verts.data();
-        // ui_create_info.vertex_count = ui_verts.size();
-        // ui_create_info.vertex_element_size = sizeof(Vertex2D);
-        // ui_create_info.indices = ui_indices.data();
-        // ui_create_info.index_count = ui_indices.size();
-        // ui_create_info.index_element_size = sizeof(u32);
-        // ui_create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial();
-        // default_ui_geometry = RendererFrontend::GetInstance()->CreateGeometry(ui_create_info);
-        // if (!default_geometry) {
-        //     ERROR("Error occured during creating default 2d geometry.");
-        // }
-
     };
 
     void GeometrySystem::DestroyDefaultGeometries() {
@@ -145,7 +123,7 @@ namespace Engine {
     u32 GeometrySystem::GetNewGeometryId() {
         b8 found = false;
         for (u32 i = 0; i < registered_geometries.size(); ++i) {
-            if (!registered_geometries[i]) {
+            if (!registered_geometries[i].geometry) {
                 return i;
             }
         }
@@ -165,10 +143,17 @@ namespace Engine {
         create_info.index_count = config.index_count;
         create_info.index_element_size = config.index_size;
         create_info.material = MaterialSystem::GetInstance()->AcquireMaterial(config.material_name);
+
         if (!create_info.material) {
             WARN("Unable to acquire material '%s' for geometry '%s'. Swapping to default.", config.material_name.c_str(), config.name.c_str());
             create_info.material = MaterialSystem::GetInstance()->GetDefaultMaterial();
         }
+
+        if (create_info.id == INVALID_ID) {
+            ERROR("GeometrySystem::AcquireGeometryFromConfig: Unable to acquire new geometry ID.");
+            return nullptr;
+        }
+
         create_info.name = config.name;
 
         Geometry* g = RendererFrontend::GetInstance()->CreateGeometry(create_info);
@@ -177,9 +162,14 @@ namespace Engine {
         }
 
         if (g->GetInternalId() == registered_geometries.size()) {
-            registered_geometries.push_back(g);
+            registered_geometries.push_back((GeometryReference){
+                g, auto_release, 1
+            });
         } else {
-            registered_geometries[g->GetInternalId()] = g;
+            u32 id = g->GetInternalId();
+            registered_geometries[id].geometry = g;
+            registered_geometries[id].auto_release = auto_release;
+            registered_geometries[id].ref_count = 1;
         }
         
         return g;
@@ -223,11 +213,11 @@ namespace Engine {
         GeometryConfig config;
         const u32 v_size = sizeof(Vertex3D) * x_segment_count * y_segment_count * 4;
         const u32 i_size = sizeof(u32) * x_segment_count * y_segment_count * 6;
-        config.vertices = Platform::AMemory(v_size);
-        config.indices = Platform::AMemory(i_size);
+        config.vertices = Platform::AllocMemory(v_size);
+        config.indices = Platform::AllocMemory(i_size);
 
-        Platform::ZMemory(config.vertices, v_size);
-        Platform::ZMemory(config.indices, i_size);
+        Platform::ZrMemory(config.vertices, v_size);
+        Platform::ZrMemory(config.indices, i_size);
 
         config.vertex_size = sizeof(Vertex3D);
         config.vertex_count = x_segment_count * y_segment_count * 4;
@@ -332,10 +322,10 @@ namespace Engine {
         GeometryConfig config = {};
         config.vertex_size = sizeof(Vertex3D);
         config.vertex_count = 4 * 6;  // 4 verts per side, 6 sides
-        config.vertices = Platform::AMemory(sizeof(Vertex3D) * config.vertex_count);
+        config.vertices = Platform::AllocMemory(sizeof(Vertex3D) * config.vertex_count);
         config.index_size = sizeof(u32);
         config.index_count = 6 * 6;  // 6 indices per side, 6 sides
-        config.indices = Platform::AMemory(sizeof(u32) * config.index_count);
+        config.indices = Platform::AllocMemory(sizeof(u32) * config.index_count);
 
         f32 half_width = width * 0.5f;
         f32 half_height = height * 0.5f;
@@ -353,7 +343,7 @@ namespace Engine {
 
         Vertex3D verts[24];
 
-        Platform::ZMemory(verts, sizeof(Vertex3D) * 24);
+        Platform::ZrMemory(verts, sizeof(Vertex3D) * 24);
 
         // Front face
         verts[(0 * 4) + 0].position = (glm::vec3){min_x, min_y, max_z};
@@ -430,7 +420,7 @@ namespace Engine {
         Geometry::GenerateNormals(24, verts, 36, (u32*)config.indices);
         Geometry::GenerateTangents(24, verts, 36, (u32*)config.indices);
 
-        Platform::CMemory(config.vertices, verts, config.vertex_size * config.vertex_count);
+        Platform::CpMemory(config.vertices, verts, config.vertex_size * config.vertex_count);
 
         if (name.size() > 0) {
             config.name = name;
@@ -450,10 +440,10 @@ namespace Engine {
 
     void GeometrySystem::DisposeConfig(GeometryConfig& config) {
         if (config.indices) {
-            Platform::FMemory(config.indices);
+            Platform::FrMemory(config.indices);
         }
         if (config.vertices) {
-            Platform::FMemory(config.vertices);
+            Platform::FrMemory(config.vertices);
         }
     };
 }

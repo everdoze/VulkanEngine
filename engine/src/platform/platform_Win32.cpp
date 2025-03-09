@@ -186,7 +186,7 @@ namespace Engine {
         return (f64)now_time.QuadPart * clock_frequency;
     };
 
-    void Platform::Sleep(u64 ms) {
+    void Platform::PSleep(u64 ms) {
         Sleep(ms);
     };
 
@@ -327,33 +327,48 @@ namespace Engine {
         ShowCursor(show);
     };
 
+    void FastSetCursorPos(int x, int y) {
+        INPUT input;
+        input.type = INPUT_MOUSE;
+        input.mi.dx = x * (65536 / GetSystemMetrics(SM_CXSCREEN));
+        input.mi.dy = y * (65536 / GetSystemMetrics(SM_CYSCREEN));
+        input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE;
+        SendInput(1, &input, sizeof(INPUT));
+    }
+
     b8 Platform::SetCursorPosition(i32 x, i32 y) {
-        RECT w_rect;
-        GetWindowRect(w32State->hwnd, &w_rect);
-        b8 result = SetCursorPos(x + (w_rect.left - w32State->border_rect.left), y + (w_rect.top - w32State->border_rect.top));
-        if (result) {
-            InputSystem::GetInstance()->ProcessMouseMove(x, y);
-        }
-        return result;
+        RECT clientRect;
+        GetClientRect(w32State->hwnd, &clientRect);
+
+        POINT topLeft = { clientRect.left, clientRect.top };
+
+        ClientToScreen(w32State->hwnd, &topLeft);
+
+        i32 absolute_X = x + (topLeft.x - w32State->border_rect.left);
+        i32 absolute_Y = y + (topLeft.y - w32State->border_rect.top);
+
+        FastSetCursorPos(absolute_X, absolute_Y);
+        InputSystem::GetInstance()->ProcessMouseMove(x, y);
+        return true;
     };
 
-    void Platform::ZMemory(void* block, u64 size) {
+    void Platform::ZrMemory(void* block, u64 size) {
         memset(block, 0, size);
     };
 
-    void Platform::FMemory(void* block) {
+    void Platform::FrMemory(void* block) {
         free(block);
     };
 
-    void Platform::CMemory(void* dest, const void* source, u64 size) {
+    void Platform::CpMemory(void* dest, const void* source, u64 size) {
         memcpy(dest, source, size);
     };
 
-    void* Platform::AMemory(u64 size) {
+    void* Platform::AllocMemory(u64 size) {
         return malloc(size);
     };
 
-    void Platform::SMemory(void* block, i32 data, u64 size) {
+    void Platform::SetMemory(void* block, i32 data, u64 size) {
         memset(block, data, size);
     };
 

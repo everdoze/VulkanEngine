@@ -18,7 +18,7 @@ namespace Engine {
 
         this->renderpass = renderpass;
 
-        this->attachments = (VkImageView*)Platform::AMemory(sizeof(VkImageView) * attachment_count);
+        this->attachments = (VkImageView*)Platform::AllocMemory(sizeof(VkImageView) * attachment_count);
         for (u32 i = 0; i < attachment_count; ++i) {
             this->attachments[i] = attachments[i];
         }
@@ -65,7 +65,7 @@ namespace Engine {
         DestroyVulkanFramebuffer();
         
         if (this->attachments) {
-            Platform::FMemory(this->attachments);
+            Platform::FrMemory(this->attachments);
             this->attachments = nullptr;
         }
         

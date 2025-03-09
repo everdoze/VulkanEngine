@@ -182,6 +182,7 @@ namespace Engine {
             void ProcessKey(Keys key, b8 pressed);
             void ProcessButton(Buttons button, b8 pressed);
             void ProcessMouseMove(i16 x, i16 y);
+            void ProcessMouseMoveDelta(i16 x, i16 y);
             void ProcessMouseWheel(i8 z_delta);
 
             b8 IsKeyDown(Keys key);

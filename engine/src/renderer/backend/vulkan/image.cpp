@@ -1,3 +1,4 @@
+#include "image.hpp"
 #include "swapchain.hpp"
 #include "vulkan.hpp"
 #include "helpers.hpp"
@@ -17,11 +18,15 @@ namespace Engine {
             this->view = nullptr;
         }
         if (this->memory) {
-            vkFreeMemory(backend->GetVulkanDevice()->logical_device, this->memory, backend->GetVulkanAllocator());
+            if (this->own_image) {
+                vkFreeMemory(backend->GetVulkanDevice()->logical_device, this->memory, backend->GetVulkanAllocator());
+            }
             this->memory = nullptr;
         }
         if (this->handle) {
-            vkDestroyImage(backend->GetVulkanDevice()->logical_device, this->handle, backend->GetVulkanAllocator());
+            if (this->own_image) {
+                vkDestroyImage(backend->GetVulkanDevice()->logical_device, this->handle, backend->GetVulkanAllocator());
+            }
             this->handle = nullptr;
         }
     };
@@ -39,12 +44,14 @@ namespace Engine {
         
         VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
+        this->own_image = true;
         this->height = height;
         this->width = width;
+        this->format = format;
 
         // Creation info.
         VkImageCreateInfo image_create_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
-        image_create_info.imageType = VK_IMAGE_TYPE_2D;
+        image_create_info.imageType = image_type;
         image_create_info.extent.width = width;
         image_create_info.extent.height = height;
         image_create_info.extent.depth = 1;  // TODO: Support configurable depth.
@@ -88,10 +95,24 @@ namespace Engine {
 
     };
 
-    void VulkanImage::VulkanImageViewCreate(
-            VkFormat format,
-            VkImageAspectFlags aspect_flags) {
+    VulkanImage::VulkanImage(u32 width, u32 height, VkImage image, VkFormat format, b32 create_view, VkImageAspectFlags view_aspect_flags) {
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
+        this->own_image = false;
+        this->height = height;
+        this->width = width;
+        this->handle = image;
+
+        // Create view
+        if (create_view) {
+            this->view = nullptr;
+            VulkanImageViewCreate(format, view_aspect_flags);
+        }
+    };  
+
+    void VulkanImage::VulkanImageViewCreate(
+        VkFormat format,
+        VkImageAspectFlags aspect_flags) {
         VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
         
         VkImageViewCreateInfo view_create_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
@@ -111,7 +132,6 @@ namespace Engine {
             &view_create_info, 
             backend->GetVulkanAllocator(), 
             &this->view));
-
     };
 
     void VulkanImage::TransitionLayout(
@@ -168,7 +188,7 @@ namespace Engine {
             VulkanCommandBuffer* command_buffer) {
         
         VkBufferImageCopy region;
-        Platform::ZMemory(&region, sizeof(region));
+        Platform::ZrMemory(&region, sizeof(region));
 
         region.bufferOffset = 0;
         region.bufferRowLength = 0;

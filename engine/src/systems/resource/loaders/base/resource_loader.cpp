@@ -15,8 +15,4 @@ namespace Engine {
         this->type_path = type_path;
     };
 
-    ResourceLoader::~ResourceLoader() {
-
-    };
-
 } 

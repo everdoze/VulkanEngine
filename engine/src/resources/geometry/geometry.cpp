@@ -50,6 +50,7 @@ namespace Engine {
             vertices[i1].tangent = t4;
             vertices[i2].tangent = t4;
         }
+
     };
 
     void Geometry::GenerateNormals(u32 vertex_count, Vertex3D* vertices, u32 index_count, u32* indices) {
@@ -91,7 +92,7 @@ namespace Engine {
     };
 
     u32 Geometry::DeduplicateVertices(u32 vertex_count, Vertex3D* vertices, u32 index_count, u32* indices, Vertex3D** out_vertices) {
-        Vertex3D* unique_verts = (Vertex3D*)Platform::AMemory(sizeof(Vertex3D) * vertex_count);
+        Vertex3D* unique_verts = (Vertex3D*)Platform::AllocMemory(sizeof(Vertex3D) * vertex_count);
         u32 unique_vertex_count = 0;
 
         u32 found_count = 0;
@@ -113,10 +114,10 @@ namespace Engine {
             }
         }
 
-        *out_vertices = (Vertex3D*)Platform::AMemory(sizeof(Vertex3D) * unique_vertex_count);
-        Platform::CMemory(*out_vertices, unique_verts, sizeof(Vertex3D) * unique_vertex_count);
+        *out_vertices = (Vertex3D*)Platform::AllocMemory(sizeof(Vertex3D) * unique_vertex_count);
+        Platform::CpMemory(*out_vertices, unique_verts, sizeof(Vertex3D) * unique_vertex_count);
 
-        Platform::FMemory(unique_verts);
+        Platform::FrMemory(unique_verts);
 
         u32 removed_count = vertex_count - unique_vertex_count;
         DEBUG("Geometry::DeduplicateVertices - removed %d duiplicates, before: %d -> after: %d", removed_count, vertex_count, unique_vertex_count);

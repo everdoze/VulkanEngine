@@ -7,14 +7,18 @@ namespace Engine {
     b8 ResourceSystem::Initialize(std::string base_path) {
         if (!instance) {
             instance = new ResourceSystem(base_path);
+            return true;
         }
+        WARN("ResourceSystem is already initialized.");
         return true;
     };
 
     void ResourceSystem::Shutdown() {
         if (instance) {
-            delete instance;
+            DEBUG("Shutting down ResourceSystem.");
+            return delete instance;
         }
+        ERROR("ResourceSystem is not initialized.");
     };
 
     std::string ResourceSystem::CreateLoaderPath(std::string path) {
@@ -45,15 +49,12 @@ namespace Engine {
     };  
 
     ResourceSystem::~ResourceSystem() {
-        #pragma clang diagnostic push
-        #pragma clang diagnostic ignored "-Wdelete-abstract-non-virtual-dtor"
         for (auto [key, loader] : registered_loaders) {
             delete loader;
         }
         for (auto [key, loader] : registered_custom_loaders) {
             delete loader;
         }
-        #pragma clang diagnostic pop
     };
 
     void ResourceSystem::RegisterLoader(ResourceType type, ResourceLoader* loader) {

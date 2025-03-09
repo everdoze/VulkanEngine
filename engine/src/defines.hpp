@@ -13,8 +13,10 @@
 #include <string_view>
 #include <map>
 #include <thread>
+#include <concepts>
 
 #include <string>
+#include <format>
 #include <cstring>
 #include <sstream>
 #include <array>
@@ -26,34 +28,6 @@
 #ifdef _DEBUG
 #include <crtdbg.h> 
 #endif
-
-// namespace Engine {
-
-// 	template<typename T>
-// 	using Unique = std::unique_ptr<T>;
-
-// 	template<typename T, typename ... Args>
-// 	constexpr Unique<T> CreateUnique(Args&& ... args) {
-// 		return std::make_unique<T>(std::forward<Args>(args)...);
-// 	}
-
-// 	template<typename T>
-// 	using Ref = std::shared_ptr<T>;
-
-// 	template<typename T, typename ... Args>
-// 	constexpr Ref<T> CreateRef(Args&& ... args) {
-// 		return std::make_shared<T>(std::forward<Args>(args)...);
-// 	}
-
-//     template<typename T, typename U>
-//     constexpr Ref<T> Cast(const std::shared_ptr<U>& r) {
-//         auto p = static_cast<typename std::shared_ptr<T>::element_type*>(r.get());
-//         return std::shared_ptr<T>{r, p};
-//     }
-// }
-
-#define MODE_3D false
-#define PIXEL_SIZE 4
 
 // Just char
 typedef char c8;
@@ -196,3 +170,26 @@ INLINE_API u64 GetAligned(u64 operand, u64 granularity) {
 INLINE_API MemoryRange GetAlignedMemory(u64 offset, u64 size, u64 granularity) {
     return (MemoryRange){GetAligned(offset, granularity), GetAligned(size, granularity)};
 }
+
+
+#define ENABLE_BITMASK_OPERATORS(x)                     \
+INLINE_API x operator|(x a, x b) {                      \
+    return static_cast<x>(                              \
+        static_cast<std::underlying_type<x>::type>(a) | \
+        static_cast<std::underlying_type<x>::type>(b)   \
+    );                                                  \
+}                                                       \
+INLINE_API x& operator|=(x& a, x b) {                   \
+    return a = a | b;                                   \
+}                                                       \
+INLINE_API b8 operator&(x a, x b) {                     \
+    return static_cast<b8>(                             \
+        static_cast<std::underlying_type<x>::type>(a) & \
+        static_cast<std::underlying_type<x>::type>(b)   \
+    );                                                  \
+}                                                       \
+INLINE_API x operator~(x a) {                           \
+    return static_cast<x>(                              \
+        ~static_cast<std::underlying_type<x>::type>(a)  \
+    );                                                  \
+}                                                       

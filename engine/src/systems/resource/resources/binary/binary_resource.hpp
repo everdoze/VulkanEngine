@@ -5,7 +5,7 @@
 
 namespace Engine {
 
-    class BinaryResource : public Resource {
+    class ENGINE_API BinaryResource : public Resource {
         public:
             BinaryResource(
                 u32 loader_id, std::string name, 

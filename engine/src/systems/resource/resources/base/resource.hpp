@@ -4,7 +4,7 @@
 
 namespace Engine {
 
-    class Resource {
+    class ENGINE_API Resource {
         public:
             Resource(u32 loader_id, std::string name, std::string full_path);
             ~Resource();

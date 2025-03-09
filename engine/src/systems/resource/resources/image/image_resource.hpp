@@ -5,7 +5,7 @@
 
 namespace Engine {
 
-    class ImageResource : public Resource {
+    class ENGINE_API ImageResource : public Resource {
         public:
             ImageResource(
                 u32 loader_id, std::string name, 

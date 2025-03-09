@@ -3,10 +3,15 @@
 #include "defines.hpp"
 #include "resources/geometry/geometry.hpp"
 
-namespace Engine
-{
-    // TODO: AUTO_RELEASE usage
-    class GeometrySystem {
+namespace Engine {
+
+    struct GeometryReference {
+        Geometry* geometry;
+        b8 auto_release;
+        u32 ref_count;
+    };
+
+    class ENGINE_API GeometrySystem {
         public:
             GeometrySystem();
             ~GeometrySystem();
@@ -21,8 +26,6 @@ namespace Engine
             u32 GetNewGeometryId();
 
             Geometry* GetDefaultGeometry();
-
-            Geometry* LoadGeometry(GeometryConfig& config);
 
             void CreateDefaultGeometries();
             void DestroyDefaultGeometries();
@@ -46,6 +49,6 @@ namespace Engine
             static GeometrySystem* instance;
 
             Geometry* default_geometry;
-            std::vector<Geometry*> registered_geometries;
+            std::vector<GeometryReference> registered_geometries;
     };
 } 

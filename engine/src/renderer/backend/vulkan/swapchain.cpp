@@ -13,7 +13,7 @@ namespace Engine {
         VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
         ready = false;
-        depth_attachment = nullptr;
+        depth_texture = nullptr;
  
         VkExtent2D swapchain_extent = {width, height};
 
@@ -108,7 +108,7 @@ namespace Engine {
             backend->GetVulkanAllocator(),
             &this->handle));
 
-        backend->SetCurrentFrame(0);
+        //backend->SetCurrentFrame(0);
         this->image_count = 0;    
 
         VK_CHECK(vkGetSwapchainImagesKHR(
@@ -117,39 +117,40 @@ namespace Engine {
             &this->image_count, 
             0));
 
-        this->images = (VkImage*)Platform::AMemory(sizeof(VkImage) * this->image_count);
-        this->views = (VkImageView*)Platform::AMemory(sizeof(VkImageView) * this->image_count);
-
+        VkImage temp_images[32];
         VK_CHECK(vkGetSwapchainImagesKHR(
             backend->GetVulkanDevice()->logical_device, 
             this->handle, 
             &this->image_count, 
-            this->images));
-
+            temp_images));
+        
+        this->render_textures.resize(this->image_count);
         for (u32 i = 0; i < this->image_count; ++i) {
-            VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
-            view_info.image = this->images[i];
-            view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-            view_info.format = this->image_format.format;
-            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-            view_info.subresourceRange.baseMipLevel = 0;
-            view_info.subresourceRange.levelCount = 1;
-            view_info.subresourceRange.baseArrayLayer = 0;
-            view_info.subresourceRange.layerCount = 1;
 
-            VK_CHECK(vkCreateImageView(
-                backend->GetVulkanDevice()->logical_device,
-                &view_info,
-                backend->GetVulkanAllocator(),
-                &this->views[i]));
+            TextureCreateInfo create_info;
+            create_info.name = StringFormat("__swapchain_render_target_image_%u__", i);
+            create_info.channel_count = 4;
+            create_info.flags = TextureFlag::IS_WRITEABLE | TextureFlag::IS_WRAPPED;
+            create_info.height = height;
+            create_info.width = width;
+
+            VulkanTextureImageInfo image_info;
+            image_info.image = temp_images[i];
+            image_info.format = this->image_format.format;
+
+            this->render_textures[i] = new VulkanTexture(
+                create_info,
+                image_info
+            );
         }
 
         if (!backend->GetVulkanDevice()->DetectDepthFormat()) {
             FATAL("Failed to find supported depth format.");
+            return;
         }
 
         // Create depth buffer
-        this->depth_attachment = new VulkanImage(
+        VulkanImage* depth_image = new VulkanImage(
             VK_IMAGE_TYPE_2D,
             swapchain_extent.width,
             swapchain_extent.height,
@@ -158,7 +159,17 @@ namespace Engine {
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
             true,
-            VK_IMAGE_ASPECT_DEPTH_BIT);
+            VK_IMAGE_ASPECT_DEPTH_BIT
+        );
+
+        TextureCreateInfo create_info;
+        create_info.name = "__swapchain_default_depth_texture__";
+        create_info.channel_count = 4;
+        create_info.flags = TextureFlag::IS_WRITEABLE | TextureFlag::IS_WRAPPED;
+        create_info.height = height;
+        create_info.width = width;
+
+        this->depth_texture = new VulkanTexture(create_info, depth_image);
 
         DEBUG("Swapchain created successfully.");
         ready = true;
@@ -169,16 +180,14 @@ namespace Engine {
 
         vkDeviceWaitIdle(backend->GetVulkanDevice()->logical_device);
 
-        DEBUG("|_Destroying Vulkan framebuffers...");
-        DestroyFramebuffers();
-
-        delete depth_attachment;
-
+        // Destroying depth attachment
+        DEBUG("|_Destroying depth attachment...");
+        delete depth_texture;
+        
+        // Destroying swapchain render textures
+        DEBUG("|_Destroying swapchain render textures...");
         for (u32 i = 0; i < this->image_count; ++i) {
-            vkDestroyImageView(
-                backend->GetVulkanDevice()->logical_device,
-                this->views[i],
-                backend->GetVulkanAllocator());
+            delete this->render_textures[i];
         }
 
         vkDestroySwapchainKHR(
@@ -215,68 +224,4 @@ namespace Engine {
             fence,
             out_index);
     };
-
-    void VulkanSwapchain::GenerateUIFramebuffers(VulkanRenderpass* renderpass) {
-        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
-
-        ui_framebuffers.reserve(image_count);
-        for (u32 i = 0; i < this->image_count; ++i) {
-            u32 attachment_count = 1;
-            
-            VkImageView attachments[] = {
-                this->views[i]
-            };
-
-            ui_framebuffers.push_back(
-                new VulkanFramebuffer(
-                    renderpass,
-                    backend->GetFrameWidth(),
-                    backend->GetFrameHeight(),
-                    attachment_count,
-                    attachments)
-            );
-        }
-    };
-
-    void VulkanSwapchain::GenerateWorldFramebuffers(VulkanRenderpass* renderpass) {
-        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
-        
-        world_framebuffers.reserve(this->image_count);
-        for (u32 i = 0; i < this->image_count; ++i) {
-            u32 attachment_count = 2;
-            
-            VkImageView attachments[] = {
-                this->views[i],
-                this->depth_attachment->view
-            };
-
-            world_framebuffers.push_back(
-                new VulkanFramebuffer(
-                    renderpass,
-                    backend->GetFrameWidth(),
-                    backend->GetFrameHeight(),
-                    attachment_count,
-                    attachments)
-            );
-        }
-    };
-
-    void VulkanSwapchain::RegenerateFramebuffers(u32 width, u32 height) {
-        for (VulkanFramebuffer* framebuffer : world_framebuffers) {
-            framebuffer->Regenerate(width, height);
-        }
-        for (VulkanFramebuffer* framebuffer : ui_framebuffers) {
-            framebuffer->Regenerate(width, height);
-        }
-    };
-
-    void VulkanSwapchain::DestroyFramebuffers() {
-        for (u32 i = 0; i < this->image_count; ++i) {
-            delete ui_framebuffers[i];
-            delete world_framebuffers[i];
-        }
-        ui_framebuffers.clear();
-        world_framebuffers.clear();
-    };
-
 };

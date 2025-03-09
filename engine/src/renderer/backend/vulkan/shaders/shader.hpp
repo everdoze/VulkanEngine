@@ -58,19 +58,19 @@ namespace Engine {
         std::vector<TextureMap*> instance_texture_maps;
     };
 
-    enum class VulkanShaderDescriptorBindingFlags: u32 {
+    enum class VulkanShaderDescriptorBindingFlags {
         UBO = 0x01,
         SAMPLER = 0x02,
     };
 
+    ENABLE_BITMASK_OPERATORS(VulkanShaderDescriptorBindingFlags)
+
     enum class VulkanShaderDescriptorBindingIndex {
-        UBO = 0,
-        SAMPLER = 1
+        UBO = 0x00,
+        SAMPLER = 0x01
     };
 
-    b8 operator&(const VulkanShaderDescriptorBindingFlags& value, const VulkanShaderDescriptorBindingFlags& operable);
-    VulkanShaderDescriptorBindingFlags operator|(const VulkanShaderDescriptorBindingFlags& value, const VulkanShaderDescriptorBindingFlags& operable);
-    VulkanShaderDescriptorBindingFlags operator|=(VulkanShaderDescriptorBindingFlags& value, const VulkanShaderDescriptorBindingFlags& operable);
+    ENABLE_BITMASK_OPERATORS(VulkanShaderDescriptorBindingIndex)
 
     struct VulkanShaderDescrptorSetConfig {
         VulkanShaderDescriptorBindingFlags flags;
@@ -123,6 +123,8 @@ namespace Engine {
             VkDescriptorSet global_descriptor_sets[3];
 
             std::vector<VulkanShaderStage> stages;
+
+            FreelistNode* global_ubo_block;
 
             VulkanBuffer* uniform_buffer;
             VulkanPipeline* pipeline;

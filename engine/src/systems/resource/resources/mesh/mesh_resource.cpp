@@ -12,8 +12,8 @@ namespace Engine {
 
     MeshResource::~MeshResource() {
         for (auto& config: configs) {
-            Platform::FMemory(config.indices);
-            Platform::FMemory(config.vertices);
+            Platform::FrMemory(config.indices);
+            Platform::FrMemory(config.vertices);
         }
     };
 

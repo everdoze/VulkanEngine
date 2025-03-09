@@ -118,6 +118,8 @@ namespace Engine {
             b8 ready;
             
         protected:
+            void ProcessSamplerUniform(ShaderUniformConfig* uniform, b8 is_global);
+
             std::string name;
             b8 use_instances;
             b8 use_locals;

@@ -17,7 +17,7 @@ namespace Engine {
 
     Resource* ShaderLoader::Load(std::string name) {
         std::string file_path = StringFormat("%s/%s.shdc", type_path.c_str(), name.c_str());
-        WARN("%s", file_path.c_str());
+        DEBUG("Loading shader '%s' from '%s'.", name.c_str(), file_path.c_str());
         tinyxml2::XMLDocument* file = FileSystem::OpenXml(file_path);
 
         // TODO: Use of versions

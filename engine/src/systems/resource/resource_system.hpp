@@ -20,7 +20,7 @@
 
 namespace Engine {
 
-    class ResourceSystem {
+    class ENGINE_API ResourceSystem {
         public:
             ResourceSystem(std::string base_path);
             ~ResourceSystem();

@@ -68,4 +68,5 @@ namespace Engine {
     void ReportAssertionFailure(const char* expression, const char* message, const char* file, i32 line) {
         Logger::GetLogger()->FormatLog("Assertion failure: %s, message: '%s', in file: %s, line: %d", LogLevel::FATAL, expression, message, file, line);
     };
+    
 };

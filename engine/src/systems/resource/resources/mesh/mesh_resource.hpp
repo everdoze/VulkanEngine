@@ -5,13 +5,13 @@
 
 namespace Engine {
     
-    struct GeometryExtent {
+    struct ENGINE_API GeometryExtent {
         glm::vec3 center;
         glm::vec3 min_extents;
         glm::vec3 max_extents;
     };
 
-    struct GeometryConfig {
+    struct ENGINE_API GeometryConfig {
         u32 vertex_size;
         u32 vertex_count;
         void* vertices;
@@ -25,7 +25,7 @@ namespace Engine {
 
     typedef std::vector<GeometryConfig> GeometryConfigs;
 
-    class MeshResource : public Resource {
+    class ENGINE_API MeshResource : public Resource {
         public:
             MeshResource(
                 u32 loader_id, std::string name,

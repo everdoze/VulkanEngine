@@ -7,7 +7,7 @@
 #define DEFAULT_TEXTURE_NAME "default_texture"
 
 namespace Engine {
-    // TODO: AUTO_RELEASE usage
+
     struct ShaderReference {
         Shader* shader;
         b8 auto_release;
@@ -21,7 +21,7 @@ namespace Engine {
 
     typedef std::vector<Param> ParamsData;
 
-    class ShaderSystem {
+    class ENGINE_API ShaderSystem {
         public:
             ShaderSystem();
             ~ShaderSystem();
@@ -31,8 +31,8 @@ namespace Engine {
             static ShaderSystem* GetInstance() { return instance; };
 
             Shader* GetShader(std::string name);
-            Shader* CreateShader(ShaderConfig& config);
-            Shader* CreateShader(std::string name);
+            Shader* CreateShader(ShaderConfig& config, b8 auto_release = true);
+            Shader* CreateShader(std::string name, b8 auto_release = true);
             b8 UseShader(std::string name);
             b8 DestroyShader(std::string name);
             
@@ -42,7 +42,7 @@ namespace Engine {
 
         private:
             static ShaderSystem* instance;
-            std::unordered_map<std::string, Shader*> registered_shaders;
+            std::unordered_map<std::string, ShaderReference> registered_shaders;
 
             Shader* current_shader;
     };

@@ -4,7 +4,7 @@
 
 namespace Engine {
 
-    class Transform {
+    class ENGINE_API Transform {
         public:
             Transform();
             Transform(glm::vec3 position);
