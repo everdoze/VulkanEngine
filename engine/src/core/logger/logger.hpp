@@ -75,20 +75,20 @@ namespace Engine {
 
 #define LOG(text, color, ...) Logger::GetLogger()->FormatLog(text, color, __VA_ARGS__);
 
-#define FATAL(text, ...) Logger::GetLogger()->FormatLog(text, Engine::LogLevel::FATAL, __VA_ARGS__);
-#define ERROR(text, ...) Logger::GetLogger()->FormatLog(text, Engine::LogLevel::ERROR, __VA_ARGS__);
-#define WARN(text, ...) Logger::GetLogger()->FormatLog(text, Engine::LogLevel::WARN, __VA_ARGS__);
-#define INFO(text, ...) Logger::GetLogger()->FormatLog(text, Engine::LogLevel::INFO, __VA_ARGS__);
-#define DEBUG(text, ...) Logger::GetLogger()->FormatLog(text, Engine::LogLevel::DEBUG, __VA_ARGS__);
-#define TRACE(text, ...) Logger::GetLogger()->FormatLog(text, Engine::LogLevel::TRACE, __VA_ARGS__);
 
-// #ifdef _DEBUG
 
-// #else
-// #define FATAL(text, ...);
-// #define ERROR(text, ...);
-// #define WARN(text, ...);
-// #define INFO(text, ...);
-// #define DEBUG(text, ...);
-// #define TRACE(text, ...);
-// #endif
+#ifdef _DEBUG
+#define FATAL(text, ...) Engine::Logger::Fatal(text, __VA_ARGS__);
+#define ERROR(text, ...) Engine::Logger::Error(text, __VA_ARGS__);
+#define WARN(text, ...) Engine::Logger::Warn(text, __VA_ARGS__);
+#define INFO(text, ...) Engine::Logger::Info(text, __VA_ARGS__);
+#define DEBUG(text, ...) Engine::Logger::Debug(text, __VA_ARGS__);
+#define TRACE(text, ...) Engine::Logger::Trace(text, __VA_ARGS__);
+#else
+#define FATAL(text, ...);
+#define ERROR(text, ...);
+#define WARN(text, ...);
+#define INFO(text, ...);
+#define DEBUG(text, ...);
+#define TRACE(text, ...);
+#endif

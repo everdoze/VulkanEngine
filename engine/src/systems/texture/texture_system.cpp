@@ -17,8 +17,10 @@ namespace Engine {
     TextureSystem::~TextureSystem() {
         DestroyDefaultTextures();
 
-        for (auto& [key, texture] : registered_textures) { 
-            delete texture;
+        for (auto& [key, map] : registered_textures) { 
+            delete map.texture;
+            map.ref_count = 0;
+            map.auto_release = false;
         } 
 
         registered_textures.clear();
@@ -27,15 +29,18 @@ namespace Engine {
     b8 TextureSystem::Initialize() {
         if (!instance) {
             instance = new TextureSystem();
+            return true;
         }
+        DEBUG("TextureSystem is already initialized.");
         return true;
     };
 
     void TextureSystem::Shutdown() {
         if (instance) {
-            DEBUG("Shutting down TextureSystem");
-            delete instance;
+            DEBUG("Shutting down TextureSystem.");
+            return delete instance;
         }
+        ERROR("TextureSystem is not initialized.");
     };
 
     TextureSystem* TextureSystem::GetInstance() {
@@ -52,17 +57,20 @@ namespace Engine {
             return default_diffuse;
         }
 
-        if (registered_textures[name]) {
-            return registered_textures[name];
+        if (registered_textures.count(name)) {
+            registered_textures[name].ref_count++;
+            return registered_textures[name].texture;
         } else {
-            registered_textures[name] = LoadTexture(name);
+            registered_textures[name].texture = LoadTexture(name);
+            registered_textures[name].auto_release = auto_release;
+            registered_textures[name].ref_count = 1;
 
-            if (!registered_textures[name]) {
+            if (!registered_textures[name].texture) {
                 ERROR("Failed to load texture '%s'.", name.c_str());
                 return nullptr;
             }
 
-            return registered_textures[name];
+            return registered_textures[name].texture;
         }   
 
         return nullptr;
@@ -74,9 +82,12 @@ namespace Engine {
             return;
         }
 
-        if (registered_textures[name]) {
-            delete registered_textures[name];
-            registered_textures.erase(name);
+        if (registered_textures.count(name)) {
+            registered_textures[name].ref_count--;
+            if (registered_textures[name].ref_count == 0 && registered_textures[name].auto_release) {
+                delete registered_textures[name].texture;
+                registered_textures.erase(name);
+            }
             return;
         }
 
@@ -90,7 +101,7 @@ namespace Engine {
         const u32 pixel_count = tex_dimension * tex_dimension;
         u8 pixels[pixel_count * channels];
 
-        Platform::SMemory(pixels, 255, sizeof(u8) * pixel_count * channels);
+        Platform::SetMemory(pixels, 255, sizeof(u8) * pixel_count * channels);
 
         for (u64 row = 0; row < tex_dimension; ++row) {
             for (u64 col = 0; col < tex_dimension; ++col) {
@@ -115,45 +126,42 @@ namespace Engine {
         create_info.width = tex_dimension;
         create_info.height = tex_dimension;
         create_info.channel_count = channels;
-        create_info.has_transparency = false;
-        create_info.is_writeable = false;
+        create_info.flags = TextureFlag::NONE;
         create_info.pixels = pixels;
         default_texture = RendererFrontend::GetInstance()->CreateTexture(create_info);
         ///////////////////////////////////////////////////
 
         // Default diffuse texture is white
         u8 diff_pixels[16 * 16 * 4];
-        Platform::SMemory(pixels, 255, sizeof(u8) * 16 * 16 * 4);
+        Platform::SetMemory(pixels, 255, sizeof(u8) * 16 * 16 * 4);
 
         TextureCreateInfo diff_create_info;
         diff_create_info.name = DEFAULT_TEXTURE_NAME;
         diff_create_info.width = 16;
         diff_create_info.height = 16;
         diff_create_info.channel_count = channels;
-        diff_create_info.has_transparency = false;
-        diff_create_info.is_writeable = false;
+        diff_create_info.flags = TextureFlag::NONE;
         diff_create_info.pixels = pixels;
         default_diffuse = RendererFrontend::GetInstance()->CreateTexture(diff_create_info);
         ////////////////////////////////////////
 
         // Default specular map is black
         u8 spec_pixels[16 * 16 * 4];
-        Platform::ZMemory(spec_pixels, sizeof(u8) * 16 * 16 * 4);
+        Platform::ZrMemory(spec_pixels, sizeof(u8) * 16 * 16 * 4);
 
         TextureCreateInfo spec_create_info;
         spec_create_info.name = DEFAULT_SPECULAR_NAME;
         spec_create_info.width = 16;
         spec_create_info.height = 16;
         spec_create_info.channel_count = 4;
-        spec_create_info.has_transparency = false;
-        spec_create_info.is_writeable = false;
+        spec_create_info.flags = TextureFlag::NONE;
         spec_create_info.pixels = spec_pixels;
         default_specular = RendererFrontend::GetInstance()->CreateTexture(spec_create_info);
         //////////////////////////////////////////
 
         // Default normal texture is blue
         u8 normal_pixels[16 * 16 * 4];  // w * h * channels
-        Platform::SMemory(normal_pixels, 255, sizeof(u8) * 16 * 16 * 4);
+        Platform::SetMemory(normal_pixels, 255, sizeof(u8) * 16 * 16 * 4);
 
         for (u64 row = 0; row < 16; ++row) {
             for (u64 col = 0; col < 16; ++col) {
@@ -170,8 +178,7 @@ namespace Engine {
         norm_create_info.width = 16;
         norm_create_info.height = 16;
         norm_create_info.channel_count = 4;
-        norm_create_info.has_transparency = false;
-        norm_create_info.is_writeable = false;
+        norm_create_info.flags = TextureFlag::NONE;
         norm_create_info.pixels = normal_pixels;
         default_normal = RendererFrontend::GetInstance()->CreateTexture(norm_create_info);
         ///////////////////////////////////////////
@@ -199,9 +206,8 @@ namespace Engine {
             create_info.width = image->GetWidth();
             create_info.height = image->GetHeight();
             create_info.channel_count = image->GetChannelCount();
-            create_info.has_transparency = image->HasTransparency();
+            create_info.flags = image->HasTransparency() ? TextureFlag::HAS_TRANSPARENCY : TextureFlag::NONE;
             create_info.pixels = image->GetPixels();
-            create_info.is_writeable = false;
             texture = RendererFrontend::GetInstance()->CreateTexture(create_info);
 
             texture->UpdateGeneration();
@@ -210,6 +216,18 @@ namespace Engine {
         delete image;
 
         return texture;
+    };
+
+    Texture* TextureSystem::AcquireWriteableTexture(std::string name, u32 width, u32 height, u8 channel_count, b8 has_transparency, b8 register_texture) {
+        TextureCreateInfo create_info;
+        create_info.name = name;
+        create_info.width = width;
+        create_info.height = height;
+        create_info.channel_count = channel_count;
+        create_info.flags |= has_transparency ? TextureFlag::HAS_TRANSPARENCY : TextureFlag:: NONE;
+        create_info.flags |= TextureFlag::IS_WRITEABLE;
+
+        return RendererFrontend::GetInstance()->CreateTexture(create_info);
     };
 
 };

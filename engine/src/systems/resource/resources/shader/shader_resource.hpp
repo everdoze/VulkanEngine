@@ -6,7 +6,7 @@
 
 namespace Engine {
 
-    class ShaderResource: public Resource {
+    class ENGINE_API ShaderResource: public Resource {
         public:
             ShaderResource(u32 loader_id, std::string name,
                 std::string full_path, ShaderConfig config);

@@ -12,7 +12,7 @@ namespace Engine {
             static void ConsoleWrite(std::string& text, u8 color);
             static f64 GetAbsoluteTime();
             static b8 ClockSetup();
-            static void Sleep(u64 ms);
+            static void PSleep(u64 ms);
             static std::vector<char*> GetRequiredExtensionsVK();
 
             static b8 SetCursorPosition(i32 x, i32 y);
@@ -23,10 +23,10 @@ namespace Engine {
 
             static b8 PumpMessages();
 
-            static void ZMemory(void* block, u64 size);
-            static void CMemory(void* dest, const void* source, u64 size);
-            static void FMemory(void* block);
-            static void* AMemory(u64 size);
-            static void SMemory(void* block, i32 data, u64 size);
+            static void ZrMemory(void* block, u64 size);
+            static void CpMemory(void* dest, const void* source, u64 size);
+            static void FrMemory(void* block);
+            static void* AllocMemory(u64 size);
+            static void SetMemory(void* block, i32 data, u64 size);
     };  
 };

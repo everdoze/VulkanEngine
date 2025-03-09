@@ -1,6 +1,7 @@
 #pragma once
 
 #include "defines.hpp"
+#include <format>
 
 namespace Engine {
 
@@ -16,6 +17,7 @@ namespace Engine {
         return std::string( buf.get(), buf.get() + size - 1 );
     }
     #pragma clang diagnostic pop
+    
 
     b8 Parse(std::string& str, glm::vec4* out_vector);
     b8 Parse(std::string& str, glm::vec3* out_vector);

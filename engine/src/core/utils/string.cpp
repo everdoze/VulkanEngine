@@ -9,7 +9,7 @@ namespace Engine {
             return false;
         }
 
-        Platform::ZMemory(out_vector, sizeof(glm::vec4));
+        Platform::ZrMemory(out_vector, sizeof(glm::vec4));
         i32 result = sscanf(str.c_str(), "%f %f %f %f", &out_vector->x, &out_vector->y, &out_vector->z, &out_vector->w);
         return result != -1;
     };
@@ -19,7 +19,7 @@ namespace Engine {
             return false;
         }
 
-        Platform::ZMemory(out_vector, sizeof(glm::vec3));
+        Platform::ZrMemory(out_vector, sizeof(glm::vec3));
         i32 result = sscanf(str.c_str(), "%f %f %f", &out_vector->x, &out_vector->y, &out_vector->z);
         return result != -1;
     };
@@ -29,7 +29,7 @@ namespace Engine {
             return false;
         }
 
-        Platform::ZMemory(out_vector, sizeof(glm::vec2));
+        Platform::ZrMemory(out_vector, sizeof(glm::vec2));
         i32 result = sscanf(str.c_str(), "%f %f", &out_vector->x, &out_vector->y);
         return result != -1;
     };

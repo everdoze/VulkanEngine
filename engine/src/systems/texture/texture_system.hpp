@@ -9,14 +9,14 @@
 #define DEFAULT_NORMAL_NAME "default_normal"
 
 namespace Engine {
-    // TODO: AUTO_RELEASE usage
+
     struct TextureReference {
         Texture* texture;
         b8 auto_release;
         u32 ref_count;
     };
 
-    class TextureSystem {
+    class ENGINE_API TextureSystem {
         public:
             TextureSystem();
             ~TextureSystem();
@@ -25,7 +25,8 @@ namespace Engine {
             static void Shutdown();
             static TextureSystem* GetInstance();
 
-            Texture* AcquireTexture(std::string name, b8 auto_release);
+            Texture* AcquireWriteableTexture(std::string name, u32 width, u32 height, u8 channel_count, b8 has_transparency, b8 register_texture);
+            Texture* AcquireTexture(std::string name, b8 auto_release = true);
             void ReleaseTexture(std::string name);
 
             b8 CreateDefaultTextures();
@@ -44,7 +45,7 @@ namespace Engine {
             Texture* default_diffuse;
             Texture* default_specular;
             Texture* default_normal;
-            std::unordered_map<std::string, Texture*> registered_textures;
+            std::unordered_map<std::string, TextureReference> registered_textures;
     };
 
 };

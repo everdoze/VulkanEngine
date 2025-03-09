@@ -21,8 +21,10 @@ namespace Engine {
     MaterialSystem::~MaterialSystem() {
         DestroyDefaultMaterial();
 
-        for (auto& [key, material] : registered_materials) { 
-            delete material;
+        for (auto& [key, material_ref] : registered_materials) { 
+            delete material_ref.material;
+            material_ref.ref_count = 0;
+            material_ref.auto_release = false;
         } 
 
         registered_materials.clear();
@@ -89,20 +91,22 @@ namespace Engine {
             instance = new MaterialSystem();
             return true;
         }
-        WARN("Material system already initialized.");
+        WARN("MaterialSystem is already initialized.");
         return true;
     };
 
     void MaterialSystem::Shutdown() {
         if (instance) {
-            DEBUG("Shutting down MaterialSystem");
+            DEBUG("Shutting down MaterialSystem.");
             delete instance;
         }
+        ERROR("MaterialSystem is not initialized.");
     };
 
-    Material* MaterialSystem::AcquireMaterial(std::string name) {
-        if (registered_materials[name]) {
-            return registered_materials[name];
+    Material* MaterialSystem::AcquireMaterial(std::string name, b8 auto_release) {
+        if (registered_materials.count(name)) {
+            registered_materials[name].ref_count++;
+            return registered_materials[name].material;
         }
 
         MaterialResource* resource = static_cast<MaterialResource*>(ResourceSystem::GetInstance()->LoadResource(ResourceType::MATERIAL, name));
@@ -114,7 +118,9 @@ namespace Engine {
         delete resource;
         Material* material = LoadMaterial(config);
         if (material) {
-            registered_materials[name] = material;
+            registered_materials[name].material = material;
+            registered_materials[name].ref_count = 1;
+            registered_materials[name].auto_release = auto_release;
         }
         return material;
     };
@@ -215,30 +221,39 @@ namespace Engine {
         return RendererFrontend::GetInstance()->CreateMaterial(mat_create_info);
     };
 
-    Material* MaterialSystem::AcquireMaterialFromConfig(MaterialConfig& config) {
+    Material* MaterialSystem::AcquireMaterialFromConfig(MaterialConfig& config, b8 auto_release) {
         if (config.name == DEFAULT_MATERIAL_NAME) {
             return default_material;
         }
 
-        if (registered_materials[config.name]) {
-            return registered_materials[config.name];
+        if (registered_materials.count(config.name)) {
+            return registered_materials[config.name].material;
         } else {
-            registered_materials[config.name] = LoadMaterial(config);
+            registered_materials[config.name].material = LoadMaterial(config);
 
-            if (!registered_materials[config.name]) {
+            if (!registered_materials[config.name].material) {
                 ERROR("Failed to load texture '%s'.", config.name.c_str());
                 return nullptr;
             }
 
-            return registered_materials[config.name];
+            registered_materials[config.name].auto_release = auto_release;
+            registered_materials[config.name].ref_count = 1;
+
+            return registered_materials[config.name].material;
         }   
 
         return nullptr;
     };
 
     void MaterialSystem::ReleaseMaterial(std::string name) {
-        if (registered_materials[name]) {
-            delete registered_materials[name];
+        if (registered_materials.count(name)) {
+            MaterialReference* material_ref = &registered_materials[name];
+
+            material_ref->ref_count--;
+
+            if (material_ref->auto_release && material_ref->ref_count == 0) {
+                delete material_ref->material;
+            }
         }
     };
 

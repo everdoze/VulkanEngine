@@ -7,12 +7,12 @@
 
 namespace Engine {
     
-    struct MeshCreateConfig {
+    struct ENGINE_API MeshCreateConfig {
         Transform* transform;
         std::vector<Geometry*> geometries;
     };
 
-    class Mesh {
+    class ENGINE_API Mesh {
         public:
             Mesh(MeshCreateConfig config);
             virtual ~Mesh();

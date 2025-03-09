@@ -21,7 +21,7 @@ namespace Engine {
         public:
             ResourceLoader(u32 id, ResourceType type, std::string type_path, std::string custom_type);
             ResourceLoader(u32 id, ResourceType type, std::string type_path);
-            ~ResourceLoader();
+            virtual ~ResourceLoader() = default;
 
             virtual Resource* Load(std::string name) = 0;
 

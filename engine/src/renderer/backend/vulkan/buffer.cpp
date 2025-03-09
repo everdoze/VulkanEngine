@@ -204,7 +204,7 @@ namespace Engine {
             node->GetSize(),
             flags,
             &data_ptr));
-        Platform::CMemory(data_ptr, data, size);
+        Platform::CpMemory(data_ptr, data, size);
         vkUnmapMemory(
             backend->GetVulkanDevice()->logical_device,
             this->memory);
@@ -221,7 +221,7 @@ namespace Engine {
             size,
             flags,
             &data_ptr));
-        Platform::CMemory(data_ptr, data, size);
+        Platform::CpMemory(data_ptr, data, size);
         vkUnmapMemory(
             backend->GetVulkanDevice()->logical_device,
             this->memory);

@@ -69,7 +69,7 @@ namespace Engine {
 
         //Color blend attachment
         VkPipelineColorBlendAttachmentState color_blend_attachment_state;
-        Platform::ZMemory(&color_blend_attachment_state, sizeof(VkPipelineColorBlendAttachmentState));
+        Platform::ZrMemory(&color_blend_attachment_state, sizeof(VkPipelineColorBlendAttachmentState));
         color_blend_attachment_state.blendEnable = VK_TRUE;
         color_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
         color_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
@@ -100,7 +100,7 @@ namespace Engine {
 
         // Vertex input 
         VkVertexInputBindingDescription binding_description;
-        Platform::ZMemory(&binding_description, sizeof(VkVertexInputBindingDescription));
+        Platform::ZrMemory(&binding_description, sizeof(VkVertexInputBindingDescription));
         binding_description.binding = 0;
         binding_description.stride = stride;
         binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
@@ -130,7 +130,7 @@ namespace Engine {
 
             // NOTE: 32 is the max number of ranges we can ever have, since spec only guarantees 128 bytes with 4-byte alignment.
             VkPushConstantRange push_constants[32];
-            Platform::ZMemory(push_constants, sizeof(VkPushConstantRange) * 32);
+            Platform::ZrMemory(push_constants, sizeof(VkPushConstantRange) * 32);
             for (u32 i = 0; i < push_constant_range_count; ++i) {
                 push_constants[i].offset = push_constant_ranges[i].offset;
                 push_constants[i].size = push_constant_ranges[i].size;
@@ -184,7 +184,7 @@ namespace Engine {
             &this->handle);
 
         if (IsVulkanResultSuccess(result)) {
-            DEBUG("Graphics pipeline created successfully.");
+            DEBUG("Graphics pipeline for renderpass '%s' created successfully.", renderpass->GetName().c_str());
             ready = true;
             return;
         }

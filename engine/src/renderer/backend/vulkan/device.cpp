@@ -8,11 +8,11 @@
 namespace Engine {
 
     VulkanDevice::VulkanDevice() {
-        Platform::ZMemory(&properties, sizeof(VkPhysicalDeviceProperties));
-        Platform::ZMemory(&features, sizeof(VkPhysicalDeviceFeatures));
-        Platform::ZMemory(&memory, sizeof(VkPhysicalDeviceMemoryProperties));
-        Platform::ZMemory(&logical_device, sizeof(VkDevice));
-        Platform::ZMemory(&physical_device, sizeof(VkPhysicalDevice));
+        Platform::ZrMemory(&properties, sizeof(VkPhysicalDeviceProperties));
+        Platform::ZrMemory(&features, sizeof(VkPhysicalDeviceFeatures));
+        Platform::ZrMemory(&memory, sizeof(VkPhysicalDeviceMemoryProperties));
+        Platform::ZrMemory(&logical_device, sizeof(VkDevice));
+        Platform::ZrMemory(&physical_device, sizeof(VkPhysicalDevice));
     };
 
     VulkanDevice::~VulkanDevice() {
@@ -41,18 +41,18 @@ namespace Engine {
         physical_device = nullptr;
 
         if (swapchain_support.formats) {
-            Platform::FMemory(swapchain_support.formats);
+            Platform::FrMemory(swapchain_support.formats);
             swapchain_support.formats = nullptr;
             swapchain_support.format_count = 0;
         }
 
         if (swapchain_support.present_modes) {
-            Platform::FMemory(swapchain_support.present_modes);
+            Platform::FrMemory(swapchain_support.present_modes);
             swapchain_support.present_modes = nullptr;
             swapchain_support.present_mode_count = 0;
         }
 
-        Platform::ZMemory(&swapchain_support.capabilities, sizeof(swapchain_support.capabilities));
+        Platform::ZrMemory(&swapchain_support.capabilities, sizeof(swapchain_support.capabilities));
 
         graphics_queue_index = -1;
         present_queue_index = -1;
@@ -91,7 +91,7 @@ namespace Engine {
         }
 
         VkDeviceQueueCreateInfo queues_create_infos[max_queue_count];
-        Platform::ZMemory(queues_create_infos, sizeof(VkDeviceQueueCreateInfo) * max_queue_count);
+        Platform::ZrMemory(queues_create_infos, sizeof(VkDeviceQueueCreateInfo) * max_queue_count);
         for (u32 i = 0; i < index_count; ++i) {
             queues_create_infos[i].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             queues_create_infos[i].queueFamilyIndex = indecies[i];
@@ -373,10 +373,10 @@ namespace Engine {
 
             if (out_swapchain_support->format_count < 1 || out_swapchain_support->present_mode_count < 1) {
                 if (out_swapchain_support->formats) {
-                    Platform::FMemory(out_swapchain_support->formats);
+                    Platform::FrMemory(out_swapchain_support->formats);
                 }
                 if (out_swapchain_support->present_modes) {
-                    Platform::FMemory(out_swapchain_support->present_modes);
+                    Platform::FrMemory(out_swapchain_support->present_modes);
                 }
                 DEBUG("Required swapchain support not present, skipping device.");
                 return false;
@@ -393,7 +393,7 @@ namespace Engine {
                     0));
 
                 if (available_extension_count != 0) {
-                    available_extensions = (VkExtensionProperties*) Platform::AMemory(sizeof(VkExtensionProperties) * available_extension_count);
+                    available_extensions = (VkExtensionProperties*) Platform::AllocMemory(sizeof(VkExtensionProperties) * available_extension_count);
                     VK_CHECK(vkEnumerateDeviceExtensionProperties(
                         physical_device,
                         0,
@@ -415,12 +415,12 @@ namespace Engine {
 
                         if (!found) {
                             DEBUG("Required extension not found: '%s', skipping device.", requirements->device_extension_names[i]);
-                            Platform::FMemory(available_extensions);
+                            Platform::FrMemory(available_extensions);
                             return false;
                         }
                     }
                 }
-                Platform::FMemory(available_extensions);
+                Platform::FrMemory(available_extensions);
             }
 
             // Sampler anisotropy
@@ -457,7 +457,7 @@ namespace Engine {
             nullptr));
 
         if (out_swapchain_support->format_count != 0) {
-            out_swapchain_support->formats = (VkSurfaceFormatKHR*)Platform::AMemory(sizeof(VkSurfaceFormatKHR) * out_swapchain_support->format_count);
+            out_swapchain_support->formats = (VkSurfaceFormatKHR*)Platform::AllocMemory(sizeof(VkSurfaceFormatKHR) * out_swapchain_support->format_count);
 
             VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(
                 physical_device,
@@ -476,7 +476,7 @@ namespace Engine {
         ));
 
         if (out_swapchain_support->present_mode_count != 0) {
-            out_swapchain_support->present_modes = (VkPresentModeKHR*)Platform::AMemory(sizeof(VkPresentModeKHR) * out_swapchain_support->present_mode_count);
+            out_swapchain_support->present_modes = (VkPresentModeKHR*)Platform::AllocMemory(sizeof(VkPresentModeKHR) * out_swapchain_support->present_mode_count);
 
             VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(
                 physical_device,
@@ -494,6 +494,8 @@ namespace Engine {
             VK_FORMAT_D32_SFLOAT_S8_UINT,
             VK_FORMAT_D24_UNORM_S8_UINT};
 
+        u8 channel_count[candidate_count] = {4, 4, 3};
+
         u32 flags = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
         for (u32 i = 0; i < candidate_count; ++i) {
             VkFormatProperties properties;
@@ -501,9 +503,11 @@ namespace Engine {
 
             if ((properties.linearTilingFeatures & flags) == flags) {
                 depth_format = candidates[i];
+                depth_channel_count = channel_count[i];
                 return true;
             } else if ((properties.optimalTilingFeatures & flags) == flags) {
                 depth_format = candidates[i];
+                depth_channel_count = channel_count[i];
                 return true;
             }
         }    

@@ -73,6 +73,7 @@ namespace Engine {
             VkPhysicalDeviceMemoryProperties memory;
 
             VkFormat depth_format;
+            u8 depth_channel_count;
 
             b8 supports_device_local_host_visible;
     };

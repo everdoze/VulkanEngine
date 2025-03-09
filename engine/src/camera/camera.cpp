@@ -8,40 +8,40 @@ namespace Engine {
     static const f32 limit = glm::radians(89.0f);
 
     Camera::Camera() {
-        // EventSystem::GetInstance()->RegisterEvent(
-        //     EventType::MouseMoved,
-        //     "Camera",
-        //     EventBind(Test)
-        // );
-
         camera_position = glm::vec3(0, 5.0f, 30.0f);
         camera_euler = glm::vec3(0, 0, 0);
 
-        GenerateProjectionMatrix();
+        u32 width = RendererFrontend::GetFrameWidthS();
+        u32 height = RendererFrontend::GetFrameHeightS();
+
+        GenerateProjectionMatrix(width, height);
         GenerateViewMatrix();
-        GenerateUIProjectionMatrix();
+        GenerateUIProjectionMatrix(width, height);
         GenerateUIViewMatrix();
     }
 
-    Camera::~Camera() {
-        // EventSystem::GetInstance()->UnregisterEvent(
-        //     EventType::MouseMoved,
-        //     "Camera"
-        // );
+    void Camera::SetPosition(glm::vec3 position) {
+        camera_position = position;
+        camera_dirty = true;
     };
+
+    void Camera::SetEuler(glm::vec3 euler) {
+        camera_euler = euler;
+        camera_dirty = true;
+    };
+
+    Camera::~Camera() {};
     
-    void Camera::GenerateUIProjectionMatrix() {
-        RendererFrontend* frontend = RendererFrontend::GetInstance();
-        ui_projection = glm::ortho<f32>(0, frontend->GetFrameWidth(), frontend->GetFrameHeight(), 0, -100.0f, 100.0f);
+    void Camera::GenerateUIProjectionMatrix(u32 width, u32 height) {
+        ui_projection = glm::ortho<f32>(0, width, height, 0, -100.0f, 100.0f);
     };
 
     void Camera::GenerateUIViewMatrix() {
         ui_view = glm::inverse(glm::identity<glm::mat4>());
     };
 
-    void Camera::GenerateProjectionMatrix() {
-        RendererFrontend* frontend = RendererFrontend::GetInstance();
-        projection = glm::perspective(fov, frontend->GetFrameWidth() / (f32)frontend->GetFrameHeight(), near_clip, far_clip);
+    void Camera::GenerateProjectionMatrix(u32 width, u32 height) {
+        projection = glm::perspective(fov, (f32)width / (f32)height, near_clip, far_clip);
     };
 
     void Camera::GenerateViewMatrix() {
@@ -52,9 +52,9 @@ namespace Engine {
         view = glm::inverse(view);
     };
 
-    void Camera::OnResize() {
-        GenerateProjectionMatrix();
-        GenerateUIProjectionMatrix();
+    void Camera::OnResize(u32 width, u32 height) {
+        GenerateProjectionMatrix(width, height);
+        GenerateUIProjectionMatrix(width, height);
     };
 
     glm::quat Camera::GetOrientation() {

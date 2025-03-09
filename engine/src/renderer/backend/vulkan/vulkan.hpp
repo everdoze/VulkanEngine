@@ -53,29 +53,44 @@ namespace Engine {
             VulkanDevice* GetVulkanDevice() { return device; };
             VulkanSwapchain* GetVulkanSwapchain () { return swapchain; };
 
-            Texture* CreateTexture(TextureCreateInfo& info);
-            VulkanTexture* CreateTextureInternal(TextureCreateInfo& info);
-
-            void GenerateFramebuffers();
-            void RegenerateFramebuffers();
-            b8 BeginRenderpass(u8 renderpass_id);
-            b8 EndRenderpass(u8 renderpass_id);
-
             void SetImageIndex(u32 index) { image_index = index; };
             u32 GetImageIndex() { return image_index; };
+            u32 GetImageCount() { return swapchain->image_count; };
+
+            Texture* GetWindowAttachment(u32 index);
+            Texture* GetDepthAttachment();
 
             void SetCurrentFrame(u32 index) { current_frame = index; };
             u32 GetCurrentFrame() { return current_frame; };
-            void NextFrame() { current_frame = (current_frame + 1) % swapchain->max_frames_in_flight; };
+            void NextFrame() { 
+                current_frame = (current_frame + 1) % swapchain->max_frames_in_flight;
+            };
             u32 GetFrame() { return current_frame; };
             f32 GetDeltaTime() { return delta_time; };
 
-            b8 Initialize();
+            b8 Initialize(RendererInitializationSetup& setup);
             void Shutdown();
             void Resized(u16 width, u16 height);
             b8 BeginFrame(f32 delta_time);
             b8 EndFrame(f32 delta_time);
-            
+
+            Renderpass* GetRenderpass(std::string name) { return renderpasses[name]; };
+
+            FreelistNode* UploadDataRange(VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, u64 size, void* data);
+            void FreeDataRange(VulkanBuffer* buffer, u64 offset, u64 size);
+
+            Texture* CreateTexture(TextureCreateInfo& info);
+            Material* CreateMaterial(MaterialCreateInfo& info);
+            Geometry* CreateGeometry(GeometryCreateInfo& info);
+            Sampler* CreateSampler(SamplerCreateInfo info);
+            Shader* CreateShader(ShaderConfig& config);
+            RenderTarget* CreateRenderTarget(RenderTargetCreateInfo& info);
+            Renderpass* CreateRenderpass(RenderpassCreateInfo& info);
+
+            void FreeGeometry(VulkanGeometry* geometry);
+
+            VulkanCommandBuffer* GetCurrentCommandBuffer() { return graphics_command_buffers[image_index]; };
+        private:
             void DrawGeometry(GeometryRenderData data);
 
             b8 SwapchainCreate(u16 width, u16 height);
@@ -91,18 +106,8 @@ namespace Engine {
             b8 CreateBuffers();
             void DestroyBuffers();
 
-            b8 RenderpassesCreate();
+            b8 RenderpassesCreate(std::vector<RenderpassCreateInfo> renderpasses_config);
 
-            FreelistNode* UploadDataRange(VkCommandPool pool, VkFence fence, VkQueue queue, VulkanBuffer* buffer, u64 size, void* data);
-            void FreeDataRange(VulkanBuffer* buffer, u64 offset, u64 size);
-
-            Material* CreateMaterial(MaterialCreateInfo& info);
-            Geometry* CreateGeometry(GeometryCreateInfo& info);
-            Shader* CreateShader(ShaderConfig& config);
-            Sampler* CreateSampler(SamplerCreateInfo& info);
-
-            void FreeGeometry(VulkanGeometry* geometry);
-        private:
             // Adding debugger only for debug mode
             #if defined(_DEBUG)
                 VkDebugUtilsMessengerEXT debug_messenger;
@@ -133,7 +138,9 @@ namespace Engine {
             VulkanSwapchain* swapchain;
             VulkanRenderpass* world_renderpass;
             VulkanRenderpass* ui_renderpass;
-            // std::vector<std::string, VulkanRenderpass*> renderpasses;
+
+            std::unordered_map<std::string, VulkanRenderpass*> renderpasses;
+            std::vector<VulkanRenderpass*> renderpass_queue;
 
             VkSurfaceKHR surface;
             VkInstance vulkan_instance;

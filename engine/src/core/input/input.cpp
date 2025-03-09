@@ -9,10 +9,10 @@ namespace Engine {
     InputSystem* InputSystem::instance = nullptr;
 
     InputSystem::InputSystem() {
-        Platform::ZMemory(&this->keyboard_prev, sizeof(KeyboardState));
-        Platform::ZMemory(&this->keyboard_current, sizeof(KeyboardState));
-        Platform::ZMemory(&this->mouse_prev, sizeof(MouseState));
-        Platform::ZMemory(&this->mouse_current, sizeof(MouseState));
+        Platform::ZrMemory(&this->keyboard_prev, sizeof(KeyboardState));
+        Platform::ZrMemory(&this->keyboard_current, sizeof(KeyboardState));
+        Platform::ZrMemory(&this->mouse_prev, sizeof(MouseState));
+        Platform::ZrMemory(&this->mouse_current, sizeof(MouseState));
     };
 
     b8 InputSystem::Initialize() {
@@ -35,8 +35,8 @@ namespace Engine {
     };
 
     void InputSystem::InputUpdate(f64 delta_time) {
-        Platform::CMemory(&this->keyboard_prev, &this->keyboard_current, sizeof(KeyboardState));
-        Platform::CMemory(&this->mouse_prev, &this->mouse_current, sizeof(MouseState));
+        Platform::CpMemory(&this->keyboard_prev, &this->keyboard_current, sizeof(KeyboardState));
+        Platform::CpMemory(&this->mouse_prev, &this->mouse_current, sizeof(MouseState));
     };
 
     void InputSystem::ProcessKey(Keys key, b8 pressed) {
@@ -81,6 +81,22 @@ namespace Engine {
             EventContext context;
             context.data.u16[0] = x;
             context.data.u16[1] = y;
+            EventSystem::GetInstance()->FireEvent(EventType::MouseMoved, context);
+        }
+    };
+
+    void InputSystem::ProcessMouseMoveDelta(i16 x, i16 y) {
+        if (this->mouse_current.x != x || this->mouse_current.y != y) {
+            // DEBUG("Mouse pos: %i, %i!", x, y);
+            
+            // Update internal input_state->
+            this->mouse_current.x += x;
+            this->mouse_current.y += y;
+
+            // Fire the event.
+            EventContext context;
+            context.data.u16[0] = this->mouse_current.x;
+            context.data.u16[1] = this->mouse_current.y;
             EventSystem::GetInstance()->FireEvent(EventType::MouseMoved, context);
         }
     };

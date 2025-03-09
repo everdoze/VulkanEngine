@@ -163,7 +163,7 @@ namespace Engine {
 
             // Vertices
             u32 vert_array_size = config.vertex_count * config.vertex_size;
-            config.vertices = Platform::AMemory(vert_array_size);
+            config.vertices = Platform::AllocMemory(vert_array_size);
             file->ReadBytes(vert_array_size, config.vertices);
 
             // Index count
@@ -174,7 +174,7 @@ namespace Engine {
 
             // Indices
             u32 idx_array_size = config.index_count * config.index_size;
-            config.indices = Platform::AMemory(idx_array_size);
+            config.indices = Platform::AllocMemory(idx_array_size);
             file->ReadBytes(idx_array_size, config.indices);
 
             // Config name
@@ -228,7 +228,7 @@ namespace Engine {
         for (u32 i = 0; i < shapes.size(); ++i) {
             auto& shape = shapes[i];
             GeometryExtent extent{};
-            u32 current_material = shape.mesh.material_ids[0];;
+            u32 current_material = shape.mesh.material_ids[0];
             u32 index_offset = 0;
             for (u32 f = 0; f < shape.mesh.num_face_vertices.size(); ++f) {
                 const u32 fv = 3;
@@ -300,11 +300,11 @@ namespace Engine {
 
             u32 vert_array_size = config.vertex_size * vertices.size();
             u32 idx_array_size = config.index_size * indices.size();
-            config.vertices = Platform::AMemory(vert_array_size);
-            config.indices = Platform::AMemory(idx_array_size);
+            config.vertices = Platform::AllocMemory(vert_array_size);
+            config.indices = Platform::AllocMemory(idx_array_size);
 
-            Platform::CMemory(config.vertices, vertices.data(), vert_array_size);
-            Platform::CMemory(config.indices, indices.data(), idx_array_size);
+            Platform::CpMemory(config.vertices, vertices.data(), vert_array_size);
+            Platform::CpMemory(config.indices, indices.data(), idx_array_size);
 
             config.index_count = indices.size();
             config.vertex_count = vertices.size();

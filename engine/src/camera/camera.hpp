@@ -29,12 +29,15 @@ namespace Engine {
             void MoveLeft(f32 amount);
             void MoveRight(f32 amount);
 
+            void SetPosition(glm::vec3 position);
+            void SetEuler(glm::vec3 euler);
+
             void Yaw(f32 amount);
             void Pitch(f32 amount);
             void Roll(f32 amount);
 
             void OnUpdate();
-            void OnResize();
+            void OnResize(u32 width, u32 height);
 
             b8 Test(EventType type, EventContext context);
 
@@ -47,10 +50,10 @@ namespace Engine {
             glm::vec3 camera_position;
             glm::vec3 camera_euler;
         private:
-            void GenerateProjectionMatrix();
+            void GenerateProjectionMatrix(u32 width, u32 height);
             void GenerateViewMatrix();
 
-            void GenerateUIProjectionMatrix();
+            void GenerateUIProjectionMatrix(u32 width, u32 height);
             void GenerateUIViewMatrix();
 
             // TODO: Probably need to configurate these

@@ -10,18 +10,6 @@
 #include "../sampler.hpp"
 
 namespace Engine {
-    
-    b8 operator&(const VulkanShaderDescriptorBindingFlags& value, const VulkanShaderDescriptorBindingFlags& operable) {
-        return (u8)value & (u8)operable;
-    };
-
-    VulkanShaderDescriptorBindingFlags operator|(const VulkanShaderDescriptorBindingFlags& value, const VulkanShaderDescriptorBindingFlags& operable) {
-        return (VulkanShaderDescriptorBindingFlags)((u8)value | (u8)operable);
-    };
-
-    VulkanShaderDescriptorBindingFlags operator|=(VulkanShaderDescriptorBindingFlags& value, const VulkanShaderDescriptorBindingFlags& operable) {
-        return (value = (VulkanShaderDescriptorBindingFlags)((u8)value | (u8)operable));
-    };
 
     const VkFormat VulkanShader::attributes_formats[(u32)ShaderAttributeType::LENGTH] = {
         VK_FORMAT_UNDEFINED,
@@ -105,7 +93,7 @@ namespace Engine {
         }
 
         // Create descriptor set layouts.
-        Platform::ZMemory(descriptor_set_layouts, (u32)ShaderScope::LENGTH * sizeof(VkDescriptorSetLayout));
+        Platform::ZrMemory(descriptor_set_layouts, (u32)ShaderScope::LENGTH * sizeof(VkDescriptorSetLayout));
         for (u32 i = 0; i < (u32)ShaderScope::LENGTH; ++i) {
             VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
             layout_info.bindingCount = descriptor_sets[i].bindings.size();
@@ -184,6 +172,8 @@ namespace Engine {
             true
         );
 
+        global_ubo_block = uniform_buffer->Allocate(global_ubo_stride);
+
         if (!uniform_buffer->ready) {
             ERROR("Failed to create uniform_buffer for object shader '%s'.", name.c_str());
             return;
@@ -236,6 +226,7 @@ namespace Engine {
 
         // Uniform buffer.
         if (uniform_buffer) {
+            global_ubo_block->FreeBlock();
             uniform_buffer->UnlockMemory();
             mapped_uniform_buffer_block = 0;
 
@@ -304,7 +295,7 @@ namespace Engine {
         
         VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
 
-        Platform::ZMemory(&out_shader_stage->create_info, sizeof(VkShaderModuleCreateInfo));
+        Platform::ZrMemory(&out_shader_stage->create_info, sizeof(VkShaderModuleCreateInfo));
 
         std::string shader_name = config.file_path;
         BinaryResource* b_resource = static_cast<BinaryResource*>(
@@ -335,7 +326,7 @@ namespace Engine {
 
         delete b_resource;
 
-        Platform::ZMemory(&out_shader_stage->shader_stage_create_info, sizeof(VkPipelineShaderStageCreateInfo));
+        Platform::ZrMemory(&out_shader_stage->shader_stage_create_info, sizeof(VkPipelineShaderStageCreateInfo));
         out_shader_stage->shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         out_shader_stage->shader_stage_create_info.stage = GetVkStageType(config);
         out_shader_stage->shader_stage_create_info.module = out_shader_stage->handle;
@@ -433,7 +424,7 @@ namespace Engine {
 
         if (needs_update) {
             VkWriteDescriptorSet descriptor_writes[2];  // TODO: Always a max of 2 descriptor sets, adding more needs to make it dynamic.
-            Platform::ZMemory(descriptor_writes, sizeof(VkWriteDescriptorSet) * 2);
+            Platform::ZrMemory(descriptor_writes, sizeof(VkWriteDescriptorSet) * 2);
             u32 descriptor_count = 0;
             u32 descriptor_index = 0;
 
@@ -522,7 +513,7 @@ namespace Engine {
         if (instance_id == INVALID_ID) {
             VulkanShaderInsanceState inst_st = {};
             inst_st.id = instance_states.size();
-            inst_st.offset = global_ubo_stride;
+            inst_st.offset = global_ubo_stride + ubo_stride * inst_st.id;
             instance_states.push_back(inst_st);
             instance_id = inst_st.id;
             instance_state = &instance_states[inst_st.id];
@@ -593,7 +584,7 @@ namespace Engine {
             ERROR("Error freeing object shader descriptor sets!");
         }
 
-        Platform::ZMemory(state->descriptor_set_state.descriptor_states, sizeof(VulkanShaderDescriptorSetState) * VULKAN_SHADER_MAX_BINDINGS);
+        Platform::ZrMemory(state->descriptor_set_state.descriptor_states, sizeof(VulkanShaderDescriptorSetState) * VULKAN_SHADER_MAX_BINDINGS);
 
         if (state->instance_texture_maps.size()) {
             state->instance_texture_maps.clear();
@@ -632,7 +623,7 @@ namespace Engine {
         
         u64 addr = (u64)mapped_uniform_buffer_block;
         addr += bound_ubo_offset + uniform->offset;
-        Platform::CMemory((void*)addr, value, uniform->size);
+        Platform::CpMemory((void*)addr, value, uniform->size);
 
         return true;
     };

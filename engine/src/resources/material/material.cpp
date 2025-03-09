@@ -16,9 +16,9 @@ namespace Engine {
         diffuse_color = info.diffuse_color;
         shininess = info.shininess;
         memory = nullptr;
-        Platform::ZMemory(&diffuse_map, sizeof(TextureMap));
-        Platform::ZMemory(&specular_map, sizeof(TextureMap));
-        Platform::ZMemory(&normals_map, sizeof(TextureMap));
+        Platform::ZrMemory(&diffuse_map, sizeof(TextureMap));
+        Platform::ZrMemory(&specular_map, sizeof(TextureMap));
+        Platform::ZrMemory(&normals_map, sizeof(TextureMap));
         texture_maps.resize(info.textures.size());
         for (u32 i = 0; i < info.textures.size(); ++i) {
             switch (info.textures[i].use) {

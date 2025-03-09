@@ -6,8 +6,14 @@
 #include "systems/resource/resources/material/material_resource.hpp"
 
 namespace Engine {
-    // TODO: AUTO_RELEASE usage
-    class MaterialSystem {
+
+    struct MaterialReference {
+        Material* material;
+        b8 auto_release;
+        u32 ref_count;
+    };
+
+    class ENGINE_API MaterialSystem {
         public:
             MaterialSystem();
             ~MaterialSystem();
@@ -16,24 +22,23 @@ namespace Engine {
             static void Shutdown();
             static MaterialSystem* GetInstance() { return instance; };
 
-            Material* AcquireMaterial(std::string name);
+            Material* AcquireMaterial(std::string name, b8 auto_release = true);
             void ReleaseMaterial(std::string name);
 
             Material* LoadMaterial(MaterialConfig& config);
             Material* GetDefaultMaterial() {return default_material; };
 
-            
 
             void CreateDefaultMaterial();
             void DestroyDefaultMaterial();
 
-            Material* AcquireMaterialFromConfig(MaterialConfig& config);
+            Material* AcquireMaterialFromConfig(MaterialConfig& config, b8 auto_release = true);
 
         private:
             static MaterialSystem* instance;
 
             Material* default_material;
-            std::unordered_map<std::string, Material*> registered_materials;
+            std::unordered_map<std::string, MaterialReference> registered_materials;
     };
 
 };

@@ -18,7 +18,7 @@ namespace Engine {
         stages = config.stages;
         ubo_stride = config.ubo_stride;
 
-        Platform::ZMemory(push_constant_ranges, sizeof(MemoryRange) * 32);
+        Platform::ZrMemory(push_constant_ranges, sizeof(MemoryRange) * 32);
 
         // This is hard-coded because the Vulkan spec only guarantees that a _minimum_ 128 bytes of space are available,
         // and it's up to the driver to determine how much is available. Therefore, to avoid complexity, only the
@@ -48,26 +48,7 @@ namespace Engine {
             uniforms_lookup[uniform->name] = &uniforms[i];
 
             if (is_sampler) {
-                uniform->offset = 0;
-                if (is_global) {
-                    uniform->location = global_texture_maps.size();
-                    global_texture_maps.push_back(
-                        (TextureMap){
-                            TextureSystem::GetInstance()->GetDefaultTexture(),
-                            TextureUse::UNKNOWN,
-                            RendererFrontend::GetInstance()->CreateSampler((SamplerCreateInfo){
-                                TextureFilterMode::LINEAR,
-                                TextureFilterMode::LINEAR,
-                                TextureRepeat::REPEAT,
-                                TextureRepeat::REPEAT,
-                                TextureRepeat::REPEAT
-                            })
-                        }
-                    );
-                } else {
-                    uniform->location = instance_texture_count;
-                    instance_texture_count++;
-                }
+                ProcessSamplerUniform(uniform, is_global);
             } else {
                 uniform->location = i;
                 uniform->offset = ubo.size;
@@ -90,8 +71,6 @@ namespace Engine {
                 push_constant_size+=uniform->size;
             }
 
-            
-
             if (!is_sampler) {
                 if (is_global) {
                     uniform->offset = global_ubo.size;
@@ -104,6 +83,29 @@ namespace Engine {
 
         ubo.offset = global_ubo.size;
     }
+
+    void Shader::ProcessSamplerUniform(ShaderUniformConfig* uniform, b8 is_global) {
+        uniform->offset = 0;
+        if (is_global) {
+            uniform->location = global_texture_maps.size();
+            global_texture_maps.push_back(
+                (TextureMap){
+                    TextureSystem::GetInstance()->GetDefaultTexture(),
+                        TextureUse::UNKNOWN,
+                        RendererFrontend::GetInstance()->CreateSampler((SamplerCreateInfo){
+                        TextureFilterMode::LINEAR,
+                        TextureFilterMode::LINEAR,
+                        TextureRepeat::REPEAT,
+                        TextureRepeat::REPEAT,
+                        TextureRepeat::REPEAT
+                    })
+                }
+            );
+        } else {
+            uniform->location = instance_texture_count;
+            instance_texture_count++;
+        }
+    };
 
     Shader::~Shader() {
         if (global_texture_maps.size()) {

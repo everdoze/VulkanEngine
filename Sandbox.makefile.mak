@@ -4,7 +4,7 @@ OBJ_DIR := obj
 
 ASSEMBLY := sandbox
 EXTENSION := .exe
-COMPILER_FLAGS := -std=c++17 -g -Werror=vla -Wno-missing-braces 
+COMPILER_FLAGS := -std=c++20 -g -Werror=vla -Wno-missing-braces 
 INCLUDE_FLAGS := -Iengine\src -Isandbox\src 
 LINKER_FLAGS := -g -Wl,-nodefaultlib:libcmt -lmsvcrtd -lengine -L$(OBJ_DIR)\engine -L$(BUILD_DIR) #-Wl,-rpath,.
 DEFINES := -D_DEBUG -DAPI_IMPORT -D_MT -D_DLL

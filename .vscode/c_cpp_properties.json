@@ -14,7 +14,7 @@
             ],
             "compilerPath": "/usr/bin/clang",
             "cStandard": "c17",
-            "cppStandard": "c++17",
+            "cppStandard": "c++20",
             "intelliSenseMode": "clang-x64"
         },
         {
@@ -30,8 +30,8 @@
                 "API_EXPORT"
             ],
             "windowsSdkVersion": "10.0.18362.0",
-            "compilerPath": "Z:\\LLVM\\bin\\clang++.exe",
-            "cppStandard": "c++17",
+            "compilerPath": "G:\\LLVM\\bin\\clang++.exe",
+            "cppStandard": "c++20",
             "intelliSenseMode": "clang-x64",
             "configurationProvider": "ms-vscode.makefile-tools"
         }

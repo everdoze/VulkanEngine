@@ -11,6 +11,7 @@ namespace Engine {
 		KeyPressed, KeyReleased, KeyTyped,
 		MouseButtonPressed, MouseButtonReleased, MouseMoved, MouseScrolled,
         Debug1, Debug2, Debug3, Debug4, Debug5,
+        RenderTargetsRefresh,
         Max
     }; 
 
@@ -28,9 +29,9 @@ namespace Engine {
 
     // #define EVENT_CLASS_CATEGORY(category) virtual int GetCategoryFlags() const override { return category; };
 
-    #define EventBind(func) [this](EventType type, EventContext& context) { return this->func(type, context); }
+    #define EventBind(func) [this](Engine::EventType type, Engine::EventContext& context) { return this->func(type, context); }
 
-    typedef struct EventContext {
+    typedef struct ENGINE_API EventContext {
         // 128 bytes
         union {
             i64 i64[2];

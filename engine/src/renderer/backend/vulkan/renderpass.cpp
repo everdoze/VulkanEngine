@@ -7,20 +7,12 @@
 
 namespace Engine {
 
-    b8 operator&(const VulkanRenderPassClearFlag& value, const VulkanRenderPassClearFlag& operable) {
-        return (u8)value & (u8)operable;
-    };
-
-    VulkanRenderPassClearFlag operator|(const VulkanRenderPassClearFlag& value, const VulkanRenderPassClearFlag& operable) {
-        return (VulkanRenderPassClearFlag)((u8)value | (u8)operable);
-    };
-
    VulkanRenderpass::VulkanRenderpass(
         std::string name,
         glm::vec4 render_area,
         glm::vec4 clear_color,
         f32 depth, u32 stencil,
-        VulkanRenderPassClearFlag clear_flags,
+        RenderpassClearFlag clear_flags,
         b8 has_prev_pass, b8 has_next_pass) {
         
         VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
@@ -45,7 +37,7 @@ namespace Engine {
         // VkAttachmentDescription attachment_descriptions[attachment_description_count];
 
         // Color attachment
-        b8 do_clear_color = this->clear_flags & VulkanRenderPassClearFlag::CLEAR_COLOR_BUFFER;
+        b8 do_clear_color = this->clear_flags & RenderpassClearFlag::CLEAR_COLOR_BUFFER;
         VkAttachmentDescription color_attachment = {};
         color_attachment.format = backend->GetVulkanSwapchain()->image_format.format;
         color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -71,7 +63,7 @@ namespace Engine {
         attachment_descriptions.push_back(color_attachment);
         
         // Depth attachment, if there is one
-        if (this->clear_flags & VulkanRenderPassClearFlag::CLEAR_COLOR_DEPTH_BUFER) {
+        if (this->clear_flags & RenderpassClearFlag::CLEAR_COLOR_DEPTH_BUFER) {
             VkAttachmentDescription depth_attachment = {};
             depth_attachment.format = backend->GetVulkanDevice()->depth_format;
             depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -147,6 +139,12 @@ namespace Engine {
 
             this->handle = nullptr;  
         }
+
+        if (this->render_targets.size()) {
+            for (auto& target : render_targets) {
+                delete target;
+            }
+        }
     };
 
     void VulkanRenderpass::OnResize(glm::vec4 render_area) {
@@ -156,11 +154,14 @@ namespace Engine {
         this->render_area = render_area;
     };
 
-    void VulkanRenderpass::Begin(VulkanCommandBuffer* command_buffer, VulkanFramebuffer* framebuffer) {
+    b8 VulkanRenderpass::Begin() {
+        VulkanRendererBackend* backend = VulkanRendererBackend::GetInstance();
+        VulkanCommandBuffer* command_buffer = backend->GetCurrentCommandBuffer();
         VkRenderPassBeginInfo begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+        VulkanRenderTarget* vulkan_render_target = static_cast<VulkanRenderTarget*>(render_targets[backend->GetImageIndex()]);
 
         begin_info.renderPass = this->handle;
-        begin_info.framebuffer = framebuffer->handle;
+        begin_info.framebuffer = vulkan_render_target->GetFramebuffer()->handle;
         begin_info.renderArea.offset.x = this->render_area.x;
         begin_info.renderArea.offset.y = this->render_area.y;
         begin_info.renderArea.extent.width = this->render_area.z;
@@ -171,19 +172,19 @@ namespace Engine {
         begin_info.clearValueCount = clear_values.size();
         begin_info.pClearValues = nullptr;
 
-        if (this->clear_flags & VulkanRenderPassClearFlag::CLEAR_COLOR_BUFFER) {
+        if (this->clear_flags & RenderpassClearFlag::CLEAR_COLOR_BUFFER) {
             VkClearValue cb_clear;
-            Platform::CMemory(cb_clear.color.float32, &clear_color, sizeof(clear_color));
+            Platform::CpMemory(cb_clear.color.float32, &clear_color, sizeof(clear_color));
             clear_values.push_back(cb_clear);
         }
 
-        if (this->clear_flags & VulkanRenderPassClearFlag::CLEAR_COLOR_DEPTH_BUFER) {
+        if (this->clear_flags & RenderpassClearFlag::CLEAR_COLOR_DEPTH_BUFER) {
             VkClearValue db_clear;
-            Platform::CMemory(db_clear.color.float32, &clear_color, sizeof(clear_color));
+            Platform::CpMemory(db_clear.color.float32, &clear_color, sizeof(clear_color));
             db_clear.depthStencil.depth = this->depth;
             db_clear.depthStencil.stencil = 0;
 
-            if (this->clear_flags & VulkanRenderPassClearFlag::CLEAR_COLOR_STENCIL_BUFFER) {
+            if (this->clear_flags & RenderpassClearFlag::CLEAR_COLOR_STENCIL_BUFFER) {
                 db_clear.depthStencil.stencil = this->stencil;
             }
             clear_values.push_back(db_clear);
@@ -194,11 +195,15 @@ namespace Engine {
 
         vkCmdBeginRenderPass(command_buffer->handle, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
         command_buffer->InRenderPass();
+
+        return true;
     };
 
-    void VulkanRenderpass::End(VulkanCommandBuffer* command_buffer) {
+    b8 VulkanRenderpass::End() {
+        VulkanCommandBuffer* command_buffer = VulkanRendererBackend::GetInstance()->GetCurrentCommandBuffer();
         vkCmdEndRenderPass(command_buffer->handle);
         command_buffer->Recording();
+        return true;
     };
 
 };
